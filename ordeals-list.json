@@ -1,0 +1,65 @@
+[
+    {
+        "ID" : 0,
+        "name" : "Au commencement",
+        "description" : "Après...",
+        "difficulty" : 1,
+        "maxLifePoints" : 0,
+        "attackEffectPattern" : [], //attack defence heal
+        "attackValuePattern" : []
+    },
+    {
+        "ID" : 1,
+        "name" : "Gerbiroche",
+        "description" : "Une petite créature vous attaque !",
+        "difficulty" : 1,
+        "maxLifePoints" : 10,
+        "attackEffectPattern" : ["d","d","a","a","a","a"],
+        "attackValuePattern" : [2,2,2,2,3,3]
+    },
+    {
+        "ID" : 2,
+        "name" : "Sablorat",
+        "description" : "Une créature vous attaque !",
+        "difficulty" : 1,
+        "maxLifePoints" : 10,
+        "attackEffectPattern" : ["d","d","a","a","a","a"],
+        "attackValuePattern" : [3,3,2,2,2,3]
+    },
+    {
+        "ID" : 3,
+        "name" : "Sangsue à écaille",
+        "description" : "Attention !",
+        "difficulty" : 2,
+        "maxLifePoints" : 15,
+        "attackEffectPattern" : ["a","a","a","a","a","a"],
+        "attackValuePattern" : [4,4,5,5,5,8]
+    },
+    {
+        "ID" : 4,
+        "name" : "Sangsue à gaz",
+        "description" : "Attention !",
+        "difficulty" : 2,
+        "maxLifePoints" : 10,
+        "attackEffectPattern" : ["a","a","a","a","a","a"],
+        "attackValuePattern" : [5,5,6,6,6,8]
+    },
+    {
+        "ID" : 5,
+        "name" : "Sanglichon à défense",
+        "description" : "Noooon...",
+        "difficulty" : 3,
+        "maxLifePoints" : 30,
+        "attackEffectPattern" : ["d","d","a","a","a","a"],
+        "attackValuePattern" : [4,4,6,8,8,12]
+    },
+    {
+        "ID" : 6,
+        "name" : "Sanglichon à crête",
+        "description" : "Nouvelle mode, nouvelle coiffure.",
+        "difficulty" : 3,
+        "maxLifePoints" : 20,
+        "attackEffectPattern" : ["d","d","d","d","a","a"],
+        "attackValuePattern" : [5,5,5,3,10,10]
+    }
+]
