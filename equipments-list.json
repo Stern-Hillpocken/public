@@ -1,20 +1,56 @@
 [
     {
         "ID" : 0,
-        "name" : "Coup de poing",
+        "name" : "Couteau",
         "type" : "a",
         "description" : "Un frappe directe",
-        "minValue" : 3,
+        "minValue" : 2,
         "power" : 1,
         "dismantle" : 0
     },
     {
         "ID" : 1,
-        "name" : "Gun",
-        "type" : "a",
-        "description" : "Une arme à feu",
+        "name" : "Couvercle",
+        "type" : "d",
+        "description" : "Une défense approximative",
+        "minValue" : 3,
+        "power" : 1,
+        "dismantle" : 0
+    },
+    {
+        "ID" : 2,
+        "name" : "Seringue",
+        "type" : "h",
+        "description" : "Sert à récupérer du liquide vitale",
         "minValue" : 5,
         "power" : 2,
-        "dismantle" : 10
+        "dismantle" : 0
+    },
+    {
+        "ID" : 3,
+        "name" : "Loupe",
+        "type" : "s",
+        "description" : "Pour être sûr de ne rien louper durant une fouille",
+        "minValue" : 1,
+        "power" : 5,
+        "dismantle" : 5
+    },
+    {
+        "ID" : 4,
+        "name" : "Coup de poing",
+        "type" : "a",
+        "description" : "Un frappe directe",
+        "minValue" : 1,
+        "power" : 1,
+        "dismantle" : 0
+    },
+    {
+        "ID" : 5,
+        "name" : "Coup de poing",
+        "type" : "a",
+        "description" : "Un frappe directe",
+        "minValue" : 1,
+        "power" : 1,
+        "dismantle" : 0
     }
 ]
