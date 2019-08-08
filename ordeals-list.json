@@ -5,7 +5,7 @@
         "description" : "Après...",
         "difficulty" : 1,
         "maxLifePoints" : 0,
-        "attackEffectPattern" : [], //attack defence heal
+        "attackEffectPattern" : [],
         "attackValuePattern" : []
     },
     {
