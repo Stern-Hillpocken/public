@@ -1,0 +1,20 @@
+[
+    {
+        "ID" : 0,
+        "name" : "Coup de poing",
+        "type" : "a",
+        "description" : "Un frappe directe",
+        "minValue" : 3,
+        "power" : 1,
+        "dismantle" : 0
+    },
+    {
+        "ID" : 1,
+        "name" : "Gun",
+        "type" : "a",
+        "description" : "Une arme à feu",
+        "minValue" : 5,
+        "power" : 2,
+        "dismantle" : 10
+    }
+]
