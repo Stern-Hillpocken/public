@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <link rel="stylesheet" href="style.css" />
+        <link rel="icon" type="image/png" href="images/ressources/worker.png" />
         <title>Tashi - L'exode avant la tempête</title>
 
         <script type="text/javascript">
@@ -11,9 +12,20 @@
             var ocarina = "";
             var sake = "";
             var constructator = [];//check is builded all
-            var taxe = [1200, 40, 20];//Balancing
+            var taxe = [1000, 40, 20];//Balancing
             var zepplin = 0;
             var statue = 0;
+            var options = [["display-tools", false], ["display-buildings", false]];
+            var buildingsPage = 0;
+            var ethical = 100;
+            var ethicalName = ["wounded", "dead", "no-guy", "sacrifice", "wood-none", "wood-few", "wood-some", "wood-lot", "food-none", "food-gain", "pirates-deal", "pirates-win", "thief", "not-ally"];
+            var ethicalPoints = [10, 30, 10, 50, 25, 0, 15, 25, 0, 10, 20, 30, 15, 20];
+            var crazyTravellers = [0, 0, 0]; //illuminate, thief, monomaniac
+            var totalCrazyTravellers = [0, 0, 0];
+            var monomaniac = [];
+            var ressourcesSD = [];
+            var toolsSD = [];
+            var buildingsSD = [];
 
             var Player = {
                 init(){
@@ -39,9 +51,10 @@
                     this.sacrificeMade = 0;
                     this.bookmarked = "unbook";
                     this.vision = [];
+                    this.humanSacrifice = 0;
                 },
-                changeLocalisation(nbSpot, foodLost){
-                    this.food -= foodLost;
+                changeLocalisation(nbSpot){
+                    this.food -= this.workerTotal;
                     this.daysBeforeStorm += board.daysBeforeStorm[nbSpot] + buildings.quantityTotal[buildings.name.indexOf("spinnaker")];
                     this.localisation = nbSpot;
                     update("ressources");
@@ -58,12 +71,12 @@
                     this.spotI=[];
                     this.spotJ=[];
                     this.spotClass=[]; //css
+                    this.fieldName=[];
                     this.woodAvaible=[];
                     this.stoneAvaible=[];
                     this.foodAvaible=[];
                     this.fiberAvaible=[];
                     this.daysBeforeStorm=[];
-                    this.foodLost=[];
                     //Pathway
                     let allMaps = [
                     "...........................x-x.............../...\\.........x-x-x-x-x-x-x...../.../.......\\.\\...x-x-x.........x-x-x.\\...\\......././.....x-x-x-x-x-x-x...........\\.../...............x-x...........................",
@@ -101,12 +114,27 @@
                 },
                 generateRessources(nbSpot){//Balancing
                     this.spotClass.push("spot_unavailable");
-                    let ressBase = [10, 10, 20];
-                    ressBase[parseInt(Math.random()*3)] += 10;
-                    this.woodAvaible.push(parseInt(Math.random()*20)+ressBase[0]);
-                    this.stoneAvaible.push(parseInt(Math.random()*20)+ressBase[1]);
-                    this.foodAvaible.push(parseInt(Math.random()*20)+ressBase[2]);
-                    this.fiberAvaible.push(parseInt(Math.random()*20)+30);
+                    let ressBase = [5, 2, 10, 30];//wood stone, fiber, food
+                    let randomField = parseInt(Math.random()*3);
+                    if(randomField === 0){
+                        this.fieldName.push("boisement clairsemé");
+                        this.woodAvaible.push(parseInt(Math.random()*5)+ressBase[0]+10);
+                        this.stoneAvaible.push(parseInt(Math.random()*5)+ressBase[1]);
+                        this.fiberAvaible.push(parseInt(Math.random()*20)+ressBase[2]);
+                        this.foodAvaible.push(parseInt(Math.random()*10)+ressBase[3]);
+                    }else if(randomField === 1){
+                        this.fieldName.push("affleurement rocheux");
+                        this.woodAvaible.push(parseInt(Math.random()*5)+ressBase[0]);
+                        this.stoneAvaible.push(parseInt(Math.random()*5)+ressBase[1]+10);
+                        this.fiberAvaible.push(parseInt(Math.random()*20)+ressBase[2]);
+                        this.foodAvaible.push(parseInt(Math.random()*10)+ressBase[3]);
+                    }else{
+                        this.fieldName.push("étendue de lin");
+                        this.woodAvaible.push(parseInt(Math.random()*5)+ressBase[0]);
+                        this.stoneAvaible.push(parseInt(Math.random()*5)+ressBase[1]);
+                        this.fiberAvaible.push(parseInt(Math.random()*20)+ressBase[2]+20);
+                        this.foodAvaible.push(parseInt(Math.random()*10)+ressBase[3]);
+                    }
                     if(this.spotJ[nbSpot] < 7){//First quarter of map
                         this.daysBeforeStorm.push(7);
                     }else if(this.spotJ[nbSpot] < 13){//Second
@@ -114,7 +142,6 @@
                     }else{ //Last
                         this.daysBeforeStorm.push(3);
                     }
-                    this.foodLost.push(parseInt(Math.random()*5)+4);
                 },
                 upClass(nbSpot){ 
                     for(i=0; i<this.spotClass.length; i++){
@@ -136,9 +163,9 @@
                             if(board.tiles[i][j] == "x"){
                                 let iconMap = board.tiles[i][j];
                                 let NSFIJ = this.calcNbSpotFromIJ(i,j);
-                                if(board.woodAvaible[NSFIJ] >= board.stoneAvaible[NSFIJ] && board.woodAvaible[NSFIJ] >= board.fiberAvaible[NSFIJ]/1.5){
+                                if(this.fieldName[NSFIJ] === "boisement clairsemé"){
                                     iconMap = "<img src=images/tiles/wood-spot.png width=32px>";
-                                }else if(board.stoneAvaible[NSFIJ] >= board.woodAvaible[NSFIJ] && board.stoneAvaible[NSFIJ] >= board.fiberAvaible[NSFIJ]/1.5){
+                                }else if(this.fieldName[NSFIJ] === "affleurement rocheux"){
                                     iconMap = "<img src=images/tiles/stone-spot.png width=32px>";
                                 }else{
                                     iconMap = "<img src=images/tiles/fiber-spot.png width=32px>";
@@ -202,7 +229,6 @@
                 init(){
                     this.quantityAvailable=[0,0];//wood and ore
                     this.quantityTotal=[0,0];
-                    this.weight = 1;
                 },
                 add(type, avaOrTot){
                     if(avaOrTot === "available"){this.quantityAvailable[type] ++;}
@@ -233,12 +259,12 @@
 
             var Buildings = {
                 init(){
-                    this.name = ["toolstation", "furnace", "loom", "saw", "saw-windmill", "furnace-windmill", "loom-windmill", "wagon", "wagon-large", "spinnaker", "rope", "crossbow", "fortification", "beacon", "trap"];
-                    this.nameFr = ["Atelier", "Four", "Métier à tisser", "Scierie mobile", "Scierie à vent", "Fonderie à vent", "Métier à tisser à vent", "Chariot à voile", "Barque à voile", "Voile supplémentaire", "Bout d'amarrage", "Cranequin tripode", "Fortification temporaire", "Mât roseau", "Piège"];
+                    this.name = ["toolstation", "furnace", "saw", "loom", "saw-windmill", "furnace-windmill", "loom-windmill", "wagon", "wagon-large", "spinnaker", "rope", "crossbow", "fortification", "beacon", "trap"];
+                    this.nameFr = ["Atelier", "Four", "Scierie mobile", "Métier à tisser", "Scierie à vent", "Fonderie à vent", "Métier à tisser à vent", "Chariot à voile", "Barque à voile", "Voile supplémentaire", "Bout d'amarrage", "Cranequin tripode", "Fortification temporaire", "Mât roseau", "Piège"];
                     this.description = ["Table avec tous les accessoires nécessaires pour créer des outils",
                     "Assemblage de pierres avec une cavité sur l’avant pour fondre la roche en minerais",
-                    "Cadre en bois avec navettes et aiguilles, attendant les fils pour tisser des voiles",
                     "Table avec une scie circulaire en son centre, activable au pied pour transformer le bois en planche",
+                    "Cadre en bois avec navettes et aiguilles, attendant les fils pour tisser des voiles",
                     "Table avec une scie circulaire activée par le vent",
                     "Four à l’efficacité augmentée par l’apport de la force du vent",
                     "Tissage et couture plus rapide grâce à la force du vent",
@@ -259,15 +285,16 @@
                         this.quantityTotal[i] = 0;
                         this.durabilityAvailable[i] = 0;
                     }
-                    this.woodCost =     [4, 0, 2, 2, 0, 0, 0, 3, 5, 0, 1, 3, 3, 4, 1];
-                    this.plankCost =    [0, 0, 3, 3, 0, 0, 0, 6,10, 0, 0, 4, 2, 0, 0];
+                    this.woodCost =     [4, 0, 2, 2, 0, 0, 0, 3, 5, 0, 1, 3, 3, 1, 1];
+                    this.plankCost =    [0, 0, 3, 3, 0, 0, 0, 6,10, 0, 0, 4, 2, 4, 0];
                     this.stoneCost =    [2, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 1];
-                    this.oreCost =      [0, 0, 2, 3, 0, 0, 0, 2, 4, 3, 0, 6, 0, 0, 0];
-                    this.fiberCost =    [0, 0, 0, 0, 0, 0, 0, 8,12, 6, 4, 2, 0, 2, 4];
+                    this.oreCost =      [0, 0, 3, 2, 0, 0, 0, 2, 4, 3, 0, 6, 0, 0, 0];
+                    this.fiberCost =    [0, 0, 0, 0, 0, 0, 0, 8,12, 6, 4, 2, 0, 0, 4];
                     this.sailCost =     [0, 0, 0, 0, 2, 2, 2, 4, 6, 3, 0, 0, 0, 2, 0];
+                    this.nbBuildCreate= [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2];
                     this.weight = [];
                     for(i=0; i<this.name.length; i++){
-                        this.weight[i] = this.woodCost[i]*8 +  this.plankCost[i]*2 + this.stoneCost[i]*6 + this.oreCost[i]*2 + this.fiberCost[i]*0 + this.sailCost[i]*3;
+                        this.weight[i] = parseInt(((this.woodCost[i]*8 +  this.plankCost[i]*2 + this.stoneCost[i]*6 + this.oreCost[i]*2 + this.fiberCost[i]*0 + this.sailCost[i]*3)/this.nbBuildCreate[i])*0.75);//Balancing the reducing weight of 0.75
                     }
                 },
                 img(value){
@@ -308,9 +335,10 @@
             //buildings.quantityAvailable[buildings.name.indexOf("furnace")]
 
             //Tips dislayed only one time (when tipDisplayed=false)
-            var tipName = ["map", "inventory", "gather", "building", "tools", "refine", "stock", "secondToLastDay", "tooHeavy"];
+            var tipName = ["map", "inventory", "sacrifice", "gather", "building", "tools", "refine", "stock", "secondToLastDay", "tooHeavy"];
             var tipDescription = ["Te voilà à étudier la carte des steppes alentours, ou plus précisément des chemins possibles pour arriver à la forteresse des montagnes la plus proche. Tu déroules la carte et la maintiens de part et d’autre : à proximité de ton pouce gauche, tu identifies votre localisation et à l’extrême droite, ta destination, la forteresse.<br>En pointant chaque lieu d’intérêt, des informations les concernant te reviennent en mémoire comme la quantité de ressources présentes. Tu estimes alors les doses de nourriture que vous devrez consommer pendant le voyage.<br>Tu ne peux bien sûr déplacer l’ensemble du convoi que de lieu adjacent en lieu adjacent car ce serait une folie de passer à travers un lieu d’intérêt sans s’y arrêter. Il faudra également veiller à ne laisser personne derrière et partir avant que la "+definitionOf("guguwa")+" ne vous rattrape.<br>Choisis un lieu et rendez-vous y.",
-            "Tu arrives à te souvenir grossièrement des quantités de ressources présentes dans chaque lieu mais cette perception n’est que trop floue. Pour plus de précision, tu peux envoyer un ou deux "+definitionOf("aikin")+" pour connaître exactement les quantités de ressources du lieu où vous vous situez actuellement, ou sur le ou les lieux qui sont adjacents. Cela pourra t’aider à planifier votre prochain déplacement.",
+            "Ces heures passées à étudier les cartes te permettent de te souvenir quel type de territoire vous aurez à traverser, cependant cette perception ne te permet pas d’en savoir plus. Pour d’avantage de précision, tu peux envoyer deux "+definitionOf("aikin")+" pour connaître exactement les quantités de ressources sur le ou les lieux qui sont adjacents. Cela pourra t’aider à planifier votre prochain déplacement.",
+            "C’est généreux et louable de vouloir sauver tout le monde, mais il peut se produire un moment où tu ne seras pas en mesure de garantir la survie du groupe, notamment en ce qui concerne la nourriture nécessaire à chacun pour se déplacer vers un autre lieu. Tu peux, pour résoudre ce problème, effectuer le sacrifice d’un des tiens si les circonstances l’exigent, impossible sinon. Lors de ces sacrifices ritualisés, tu choisiras en premier les fous et les blessés, simple application de la loi de la nature. Rappelle toi que cela n’est envisageable qu’en dernier recours, quand <span class=important_txt>rien d’autre ne peut être fait</span> pour vous permettre de vous déplacer, mais que cela sera compris par l’ensemble du groupe.",
             "Les premiers rayons du "+definitionOf("rana")+" passant à travers le "+definitionOf("zuriya mayafi")+" te réveillent un peu trop tôt ce matin. Tu t’extirpes des voiles et sors à l’extérieur de cet abri de fortune.<br>Vous voici dans ce nouveau lieu rempli de ressources à ramasser. Tu peux directement partir récolter ou bien tu pourrais envoyer les survivants cueillir ces richesses, mais tu sais qu’ils seront plus efficaces avec des outils. Cependant, avant même d’essayer de faire des outils il faut aller en <span class=important_txt>Construction</span> pour fabriquer un <span class=important_txt>Atelier</span> qui vous permettra de confectionner ces objets précieux.<br>Dernière chose très importante : récolter prend du temps. Les ressources ne seront donc disponibles <span class=important_txt>que pour le lendemain</span>, et seulement si il y en a encore dans ce lieu.",
             "C’est dans cet espace dégagé que tu peux construire les différentes structures dont vous aurez besoin pour vous faciliter la vie mais également pour vous défendre. Les structures mettent du temps à être fabriquées, c’est pourquoi tu ne pourras les utiliser <span class=important_txt>qu’à partir du lendemain</span>. De plus une personne sera mobilisée pour la construction durant toute la journée.<br>Commence à construire un <span class=important_txt>Atelier</span>, et tu reviendras plus tard pour une <span class=important_txt>Scierie</span>.<br>Tu devrais ensuite envoyer les autres récolter de la nourriture.",
             "Avec au moins un <span class=important_txt>Atelier</span> construit, tu peux assigner des personnes à la fabrication d’outils te permettant une meilleure récolte. La personne assignée <span class=important_txt>l’est pour la journée</span>, et elle peut fabriquer différents outils qui seront disponibles immédiatement. Elle ne pourra cependant confectionner que quelques outils par jour. Si tu as besoin de plus, construis un autre Atelier et assigne lui une autre personne pour la journée. Essaye en premier de bricoler un <span class=important_txt>Panier</span> pour faciliter la récolte de nourriture.",
@@ -318,7 +346,7 @@
             "Du haut de ton mât, tu as une vue d’ensemble des ressources, des outils et des structures que vous avez apportés, récoltées ou fabriqués. Tu es capable d’évaluer le poids que cela représente ce qui est utile car, avec un seul <span class=important_txt>Chariot à voile</span>, vous ne pourrez pas transporter tout ce que vous accumulez. Pense à construire de nouveaux <span class=important_txt>Chariots à voile</span> pour pouvoir déplacer plus de choses lorsque vous migrerez de lieux en lieux.",
             "C’est le dernier jour que tu as à ta disposition avant que la "+definitionOf("guguwa")+" ne dévaste tout. Comme demain il faudra partir, il vaudrait mieux <span class=important_txt>amasser un maximum de nourriture</span> pour survivre au nouveau trajet.<br>Pense à bien surveiller et avoir en tête les jours restants ("+img("time")+") avant la "+definitionOf("guguwa")+" pour planifier au mieux tes actions et votre départ.",
             "Avec la récolte de ressources de la veille le poids de vos biens est supérieur à votre capacité de transport. Surveille ce poids ("+img("weight")+") en allant faire un tour dans votre <span class=important_txt>Stock</span> et en sacrifiant certaines ressources ou objets pour être plus léger et ainsi pouvoir quitter le lieu.<br>Sinon pour palier ce désagrément, il serait envisageable de construire un <span class=important_txt>Chariot à voile</span> permettant de transporter plus de choses."];
-            var tipDisplayed = [false, false, false, false, false, false, false, false, false];
+            var tipDisplayed = [false, false, false, false, false, false, false, false, false, false];
             function tipDisplay(menu){
                 if(!tipDisplayed[tipName.indexOf(menu)]){
                     tipDisplayed[tipName.indexOf(menu)] = true;
@@ -332,6 +360,7 @@
             function start(){
                 //My axe and wagon
                 axe.add(1, "total");
+                buildings.quantityAvailable[buildings.name.indexOf("wagon")] = 1;
                 buildings.quantityTotal[buildings.name.indexOf("wagon")] = 1;
                 //Display HUD
                 update("dashboard"); update("firstRessourcesChoice"); updateStat(player.localisation); update("ressources");
@@ -347,7 +376,7 @@
                     insideDiv = "<table><tr><td><button onclick='board.upClass(player.localisation);update(\"map\");updateStat(player.localisation);'";
                     if(player.needToChoose || tutoStep == 2){insideDiv += " class=unclicable DISABLED";}
                     else if(witchMenu === "map"){insideDiv += " class=menuSelected";}
-                    insideDiv += ">Carte</button></td></tr>"
+                    insideDiv += ">"+img("map")+" Carte</button></td></tr>"
                     +"<tr><td><button onclick='update(\"gather\");updateStat(player.localisation);'";
 
                     if(player.needToChoose || tutoStep == 1 || player.daysBeforeStorm === 0){insideDiv += " class=unclicable DISABLED";}
@@ -375,10 +404,13 @@
                     insideDiv += ">"+img("weight")+" Stock</button></td></tr>"
                     +"</table>";
                     document.getElementById('dashboard_div').innerHTML = insideDiv;
+
+                    if(!player.needToChoose){document.getElementById("options_div").innerHTML = "<img src=images/ressources/options.png title=\"Ouvrir le menu des options\" width=32px style=\"cursor:pointer\" onclick='update(\"options\")'>";}
+                    else{document.getElementById("options_div").innerHTML = "<img src=images/ressources/options.png title=\"Ouvrir le menu des options\" width=32px class=unclicable>";}
                 }
 ////////////////
                 else if(witchDiv == "firstRessourcesChoice"){
-                    insideDiv = "<p>Grâce à une hache en métal récupérée dans l’enchevêtrement d’une "+definitionOf("sphéricage couronnée")+", tu arrives à dégager quelques corps enfouis sous les décombres des bâtiments. <span class=important_txt>Cinq personnes</span> en sortent miraculeusement vivantes.<br>De sous les débris du port tu arrives à extirper le "+definitionOf("Kaifi")+", un "+definitionOf("zuriya mayafi")+" pour quatre, mais vous vous entasserez pour voyager à son bord. Tu trouves également un <span class=important_txt>Chariot à voile</span> pour le transport de marchandises.<br>Tu as déjà perdu beaucoup de temps à récupérer tout ça, il faut se dépêcher, choisir une ruine de bâtiment à fouiller puis déguerpir. Tu estimes d’un coup d’œil ce qui vaut le coût. Si tu ne te souviens plus de ce qu’est cette ressource ou cet objet, tu peux toujours, pour en retrouver le nom passer les doigts dessus, cela te reviendra.<br>Quelle ruine veux-tu fouiller avant de partir ?</p>";
+                    insideDiv = "<p>Grâce à une hache en métal récupérée dans l’enchevêtrement d’une "+definitionOf("sphéricage couronnée")+", tu arrives à dégager quelques corps enfouis sous les décombres des bâtiments. <span class=important_txt>Cinq personnes</span> en sortent miraculeusement vivantes.<br>De sous les débris du port tu arrives à extirper le "+definitionOf("Kaifi")+", un "+definitionOf("zuriya mayafi")+" pour quatre, mais vous vous entasserez pour voyager à son bord. Tu trouves également un <span class=important_txt>Chariot à voile</span> pour le transport de marchandises.<br>Tu as déjà perdu beaucoup de temps à récupérer tout ça, il faut se dépêcher, choisir une ruine de bâtiment à fouiller puis déguerpir. Tu estimes d’un coup d’œil ce qui vaut le coup. Si tu ne te souviens plus de ce qu’est cette ressource ou cet objet, tu peux toujours, pour en retrouver le nom passer les doigts dessus, cela te reviendra.<br>Quelle ruine veux-tu fouiller avant de partir ?</p>";
                     let bname =  ["Ferme", "Brise-vent", "Port", "Moulin", "Scierie", "Fonderie"];//Balancing
                     let bwood =  [6, 4, 4, 4, 6, 4];            for(i=0;i<bname.length;i++){bwood[i]+=parseInt(Math.random()*3)}
                     let bplank = [4, 3, 7, 3, 8, 2];            for(i=0;i<bname.length;i++){bplank[i]+=parseInt(Math.random()*4)}
@@ -405,7 +437,7 @@
                         player.stone += "+bstone[rand[i]]+"; player.ore += "+bore[rand[i]]+"; player.fiber += "+bfiber[rand[i]]+"; player.sail += "+bsail[rand[i]]+"; player.food += "+bfood[rand[i]]+";\
                         player.needToChoose=false;\
                         tutoStep=1;\
-                        update(\"ressources\");update(\"dashboard\");update(\"explication\");updateStat(player.localisation);'>Fouiller</button></td></tr></table></div> ";
+                        update(\"ressources\");update(\"dashboard\");update(\"explication\");updateStat(player.localisation); startingDay();'>Fouiller</button></td></tr></table></div> ";
                     }
                     insideDiv += "</div>";
                     document.getElementById('main_div').innerHTML = insideDiv;
@@ -427,9 +459,6 @@
                     if(tutoStep === 0){
                         insideDiv += "<br><br><h1>Inventorier</h1>";
                         insideDiv += tipDisplay("inventory");
-                        insideDiv += "<p style=\"text-align:center;\"><button onclick='player.workerAvaible -=1; player.vision.push("+player.localisation+"); board.upClass(player.localisation); update(\"map\"); update(\"ressources\"); updateStat("+player.localisation+");' ";
-                        if(player.vision.indexOf(player.localisation) != -1 || player.workerAvaible < 1){insideDiv += "class=unclicable DISABLED";}
-                        insideDiv += ">Lieu actuel : "+img("worker")+"</button> ";
                         let visionToPush = [];
                         if(board.tiles[board.spotI[player.localisation]][board.spotJ[player.localisation]+1] === "-")
                         {visionToPush.push(board.calcNbSpotFromIJ(board.spotI[player.localisation],
@@ -439,15 +468,34 @@
                             board.spotJ[player.localisation]+2));}
                         if(board.tiles[board.spotI[player.localisation]+1][board.spotJ[player.localisation]+1] === "\\")
                         {visionToPush.push(board.calcNbSpotFromIJ(board.spotI[player.localisation]+2,
-                            board.spotJ[player.localisation]+2));}  
-                        insideDiv += "<button onclick='player.workerAvaible -=2; player.vision.push("+visionToPush+"); board.upClass(player.localisation); update(\"map\"); update(\"ressources\"); updateStat("+player.localisation+");' ";
+                            board.spotJ[player.localisation]+2));}
+                        insideDiv += "<p style=\"text-align:center;\">";
+                        insideDiv += "<button onclick='player.workerAvaible -=2; ressourcesSD[7] -= 2; player.vision.push("+visionToPush+"); board.upClass(player.localisation); update(\"map\"); update(\"ressources\"); updateStat("+player.localisation+");' ";
                         if(player.vision.indexOf(board.calcNbSpotFromIJ(board.spotI[player.localisation], board.spotJ[player.localisation]+2)[0]) != -1 ||
                             player.vision.indexOf(board.calcNbSpotFromIJ(board.spotI[player.localisation]-2, board.spotJ[player.localisation]+2)[0]) != -1 ||
                             player.vision.indexOf(board.calcNbSpotFromIJ(board.spotI[player.localisation]+2, board.spotJ[player.localisation]+2)[0]) != -1 ||
-                            player.workerAvaible < 2){insideDiv += "class=unclicable DISABLED";}
+                            player.workerAvaible < 2 ||
+                            player.daysBeforeStorm === 0){insideDiv += "class=unclicable DISABLED";}
                         insideDiv += ">Lieux adjacents : "+img("worker")+" "+img("worker")+"</button></p>";
+                        insideDiv += "<h1>Sacrifier</h1>";
+                        insideDiv += tipDisplay("sacrifice");
+                        insideDiv += "<p style=\"text-align:center;\">";
+                        insideDiv += "<button onclick='";
+                        if(player.wounded >= 1){insideDiv += "player.wounded --;";}
+                        else{insideDiv += "player.workerAvaible --; ressourcesSD[7] -= 2;";}
+                        //Kill crazyTravellers
+                        if(crazyTravellers[0] >= 1){insideDiv += "crazyTravellers[0] --;"}
+                        else if(crazyTravellers[1] >= 1){insideDiv += "crazyTravellers[1] --;"}
+                        else if(crazyTravellers[2] >= 1){insideDiv += "crazyTravellers[2] --; monomaniac.pop();"}
+                        insideDiv += "player.workerTotal --; ressourcesSD[8] --;";
+                        if(player.humanSacrifice === 0){insideDiv += "firstHumanSacrifice();";}
+                        else{insideDiv += "update(\"map\");";}
+                        insideDiv += "player.humanSacrifice ++; ethical -= "+ethicalPoints[ethicalName.indexOf("sacrifice")]+"; update(\"ressources\"); updateStat("+player.localisation+");'";
+                        if((player.daysBeforeStorm != 0 && player.food >= player.workerTotal*2) || (player.food >= player.workerTotal*2) ||
+                            (player.food+board.foodAvaible[player.localisation]+zepplin >= player.workerAvaible*3)){insideDiv += " title=\"Tu peux continuer à faire survivre ton groupe sans ça. Il ne te laisseront donc pas faire de sacrifice inutile\" class=unclicable DISABLED";}
+                        insideDiv += ">- "+img("worker")+"</button></p>";
                     }
-                    document.getElementById('main_div').innerHTML = insideDiv;
+                    document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
                 }
 ////////////////
                 else if(witchDiv == "gather"){
@@ -482,7 +530,7 @@
                         }
                         insideDiv += "</table>";
                     }
-                    document.getElementById('main_div').innerHTML = insideDiv;
+                    document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
                 }
 ////////////////
                 else if(witchDiv == "refine"){
@@ -586,17 +634,17 @@
                 }
                     insideDiv += "</table>";
 
-                    document.getElementById('main_div').innerHTML = insideDiv;
+                    document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
                 }
 ////////////////
                 else if(witchDiv == "tools"){
                     witchMenu = "tools"; update("dashboard");
                     insideDiv = "<h1>Outillage</h1>" + tipDisplay("tools");
 
-                    let ressNeed = ["1 "+img("plank")+" + 1 "+img("wood"), "1 "+img("plank")+" + 1 "+img("ore"), "1 "+img("plank")+" + 1 "+img("wood"), "1 "+img("plank")+" + 1 "+img("ore"), "3 "+img("plank")];
+                    let ressNeed = ["1 "+img("plank")+" + 1 "+img("wood"), "1 "+img("plank")+" + 1 "+img("ore"), "1 "+img("plank")+" + 1 "+img("wood"), "1 "+img("plank")+" + 1 "+img("ore"), "1 "+img("plank")+" + 2 "+img("fiber")];
                     let payPrice = ["player.plank --;player.wood --;axe.add(0, \"total\");", "player.plank --; player.ore --; axe.add(1, \"total\");",
-                    "player.plank --; player.wood --; pickaxe.add(0, \"total\");", "player.plank --; player.ore --; pickaxe.add(1, \"total\");", "player.plank -= 3;basket.add(0, \"total\");"];
-                    let isRessNotAva = [player.plank < 1 || player.wood < 1, player.plank < 1 || player.ore < 1, player.plank < 1 || player.wood < 1, player.plank < 1 || player.ore < 1, player.plank < 3];
+                    "player.plank --; player.wood --; pickaxe.add(0, \"total\");", "player.plank --; player.ore --; pickaxe.add(1, \"total\");", "player.plank -= 1; player.fiber-=2; basket.add(0, \"total\");"];
+                    let isRessNotAva = [player.plank < 1 || player.wood < 1, player.plank < 1 || player.ore < 1, player.plank < 1 || player.wood < 1, player.plank < 1 || player.ore < 1, player.plank < 1 || player.fiber < 2];
                     let toolCreated = [img("axe-wood"), img("axe-ore"), img("pickaxe-wood"), img("pickaxe-ore"), img("basket")];
 
                     for(i=0; i<5; i++){
@@ -625,28 +673,41 @@
 
                         if(i === 1 || i === 3 || i === 4){insideDiv += "</table>";}
                     }
-                    document.getElementById('main_div').innerHTML = insideDiv;
+                    document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
                 }
 ////////////////
                 else if(witchDiv == "building"){
                     witchMenu = "building"; update("dashboard");
-                    insideDiv = "<h1>Construction</h1>" + tipDisplay("building");
+                    insideDiv = "<table id=buildings_tab><tr><td ";
+                    if(buildingsPage === 0){insideDiv += "style=\"background-color:var(--opposite)\"";}
+                    insideDiv += " onclick='buildingsPage=0; update(\"building\");'>Base</td><td ";
+                    if(buildingsPage === 1){insideDiv += "style=\"background-color:var(--opposite)\"";}
+                    insideDiv += " onclick='buildingsPage=1; update(\"building\");'>Améliorations</td><td ";
+                    if(buildingsPage === 2){insideDiv += "style=\"background-color:var(--opposite)\"";}
+                    insideDiv += " onclick='buildingsPage=2; update(\"building\");'>Transport</td><td ";
+                    if(buildingsPage === 3){insideDiv += "style=\"background-color:var(--opposite)\"";}
+                    insideDiv += " onclick='buildingsPage=3; update(\"building\");'>Autres</td></tr></table>";
+                    insideDiv += tipDisplay("building");
+                    let buildingsStart;
+                    let buildingsEnd;
+                    if(buildingsPage === 0){buildingsStart=0; buildingsEnd=4;}
+                    else if(buildingsPage === 1){buildingsStart=4; buildingsEnd=7}
+                    else if(buildingsPage === 2){buildingsStart=7; buildingsEnd=10}
+                    else{buildingsStart=10; buildingsEnd=buildings.name.length;}
 
-                    for(i=0; i<buildings.name.length; i++){
-                        if(i===3){insideDiv += "<h1>Affinage +</h1>";}
-                        else if(i===7){insideDiv += "<h1>Transport</h1>";}
-                        else if(i===10){insideDiv += "<h1>Autre</h1>";}
+                    for(i=buildingsStart; i<buildingsEnd; i++){
                         insideDiv += "<p>"+buildings.img(i)+" <span style=\"font-size:2em\">"+buildings.nameFr[i]+"</span> <span style=\"cursor:help\" title='Disponible/Total'> "+buildings.quantityAvailable[i]+"/" +buildings.quantityTotal[i]+ "</span><br>"+buildings.description[i];
-                        if(buildings.durabilityMax[i] > 0){insideDiv += "<br>Nombre d'utilisation par jour : "+buildings.durabilityMax[i];}
+                        if(buildings.nbBuildCreate[i] > 1){insideDiv += "<br>Nombre de pièces réalisées par action : "+buildings.nbBuildCreate[i];}
+                        if(buildings.durabilityMax[i] > 0){insideDiv += "<br>Nombre d'utilisations par jour : "+buildings.durabilityMax[i];}
                         if(buildings.name[i] === "wagon" || buildings.name[i] === "wagon-large"){insideDiv += "<br>Poids : 0 " + img("weight");
-                        }else{insideDiv += "<br>Poids : " + buildings.weight[i] + " " + img("weight");}
+                        }else{insideDiv += "<br>Poids : " + buildings.weight[i]*buildings.nbBuildCreate[i] + " " + img("weight");}
                         insideDiv += "<br>Coût : ";
                         insideDiv += buildings.price(i);
                         insideDiv += "<br>"+buildings.buildButton(i, "keepbook")+" <button onclick='player.bookmarked="+i+"; update(\"building\"); updateStat("+player.localisation+");' ";
-                        if(player.bookmarked === i){insideDiv += "style=\"filter:hue-rotate(150deg)\"";}
+                        if(player.bookmarked === i){insideDiv += "style=filter:hue-rotate(144deg)";}
                         insideDiv += ">"+img("bookmark")+"</button></p>";
                     }
-                    document.getElementById('main_div').innerHTML = insideDiv;
+                    document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
                 }
 ////////////////
                 else if(witchDiv == "stock"){
@@ -654,7 +715,7 @@
                     insideDiv = "<h1>Stock</h1>" + tipDisplay("stock");
                     insideDiv += stockManagement("stock");
 
-                    document.getElementById('main_div').innerHTML = insideDiv;
+                    document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
                 }
 ////////////////
                 else if(witchDiv == "ressources"){
@@ -710,6 +771,7 @@
                     }
                     //
                     insideDiv += "</td></tr></table>";
+                    insideDiv += displayTB();
                     document.getElementById('ressources_div').innerHTML = insideDiv;
                 }
 ////////////////
@@ -717,6 +779,7 @@
                     witchMenu = ""; update("dashboard");
                     let rand;
                     let encounters = [[0,0,0,1,2,2,3,3], [0,1,1,2,2,3,3,3], [0,1,1,2,2,2,3,3]];//Balancing
+                    //0:nothing/BG ; 1:dépense inéluctable ; 2:autre/build ; 3:choice
                     if(board.spotJ[player.localisation] < 7){rand = encounters[0][parseInt(Math.random()*8)];}
                     else if(board.spotJ[player.localisation] < 13){rand = encounters[1][parseInt(Math.random()*8)];}
                     else{rand = encounters[2][parseInt(Math.random()*8)];}
@@ -726,16 +789,16 @@
                     if(rand === 0){//Nothing
                         let rng = parseInt(Math.random()*8);
                         h1 = "Nuit calme avant la tempête";
-                        button = "<button onclick='player.needToChoose=false;update(\"map\");'>S'endormir</button>";
+                        button = "<button onclick='player.needToChoose=false; update(\"map\"); startingDay();'>S’endormir</button>";
                         if(rng === 0){
                             back = "C’est à ton tour de <span class=important_txt>monter la garde</span>. Tu te couvres et tu vas te positionner à l’endroit le plus critique : face à la partie la plus ouverte du campement, face à l’immensité des steppes. Les "+definitionOf("tauran")+" brodent le ciel, apportant le peu de lumière disponible lors de l’absence d’"+definitionOf("ido")+". Le vent, le calme, les herbes hautes ondulant telles des vagues sont tous des éléments apaisants pour toi. Puis vient le moment de la ronde autour du camp, pour éloigner les bêtes et pour se réchauffer car les nuits sont fraîches. Après plusieurs passages à épier les alentours, c’est l’heure de retourner au feu pour l’entretenir et y terminer la nuit.";
                         }else if(rng === 1){
                             if(ocarina != "builded"){
                             back = "Vous êtes allés vite aujourd’hui, le "+definitionOf("rana")+" n’est pas trop bas à l’horizon. Tu en profites pour sortir de tes poches un morceau de bois d’un "+definitionOf("saxaoul rampant")+" que tu as récupéré en chemin. Le bois est très lisse, presque glissant au touché. Tu vas prendre quelques outils et t’installes non loin de l’atelier pour commencer à modeler le bois. Si au début tu ne penses à rien d’autre qu’à te détendre, très vite la forme d’un "+definitionOf("sarewa")+" semble se dessiner sous tes doigts, et tu accentues ainsi ces formes arrondies. Tu commences par t’occuper du résonateur, s’en suit le goulot, biseau, porte-vent pour finir par les trous : futurs emplacements de tes doigts.<br>Après le repas, tu reprends ton travail et commence à peine la gravure pour le décorer avant de tomber de fatigue.";
-                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); ocarina=\"builded\"'>S'endormir</button>";
+                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); ocarina=\"builded\"; startingDay();'>S’endormir</button>";
                             }else{
                             back = "Fin de journée laborieuse, tu as bien cru à plusieurs reprises ne pas pouvoir y arriver avant que le "+definitionOf("rana")+" ne se couche. Enfin un peu de temps pour toi. Tu ressors alors le "+definitionOf("sarewa")+" terminé. Tu ajustes les notes et certains des tiens commencent à se regrouper timidement autour de toi.<br>À peine une heure s’est écoulée et c’est l’ensemble du camp qui est autour de toi à manger et chanter au son du "+definitionOf("sarewa")+".<br>Une petite tranche de bonheur… pour un soir.";
-                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); ocarina=\"played\"'>S'endormir</button>";
+                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); ocarina=\"played\"; startingDay();'>S’endormir</button>";
                             //TODO music
                             }
                         }else if(rng === 2){
@@ -743,15 +806,15 @@
                         }else if(rng === 3){
                             if(sake != "builded"){
                             back = "Presque tout va pour le mieux en ce début de soirée. À bâbord on réfléchit à comment améliorer le campement, à tribord c’est comment fabriquer un engrenage… on se croirait presque dans un camp « découverte » organisé. Tout cet entrain et ce dynamisme à entreprendre te donnent envie de bricoler un objet pour le groupe. Un objet pour se retrouver ensemble à réfléchir, un "+definitionOf("sake")+". Tu fonces à l’atelier pour commencer la réalisation de ton idée avec les chutes de bois, et tu commences à tailler les différentes pièces.<br>Après quelques allés et retours aux abords éclairés du campement pour récupérer les dernières ressources nécessaires, tu termines la réalisation du "+definitionOf("sake")+" alors que les autres sont tous déjà endormis. Vous y jouerez lors d’une autre soirée.";
-                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); sake=\"builded\"'>S'endormir</button>";
+                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); sake=\"builded\"; startingDay();'>S’endormir</button>";
                             }else{
                             back = "Ce soir, tu penses avoir le temps de jouer au "+definitionOf("sake")+". Tu sors tout fier les différents éléments de jeux que tu disposes non loin du feu, avant d’alpaguer ton futur adversaire.<br>Après plusieurs parties contre l’un puis l’autre, vous vous endormez tous, un souffle de bonne humeur se répandant sur le camp.";
-                            button = "<button onclick='player.needToChoose=false; playSake(); sake=\"played\"'>Rêver des parties jouées</button> <button onclick='player.needToChoose=false;update(\"map\");'>S'endormir sans rêve</button>";
+                            button = "<button onclick='playSake(); sake=\"played\"'>Rêver des parties jouées</button> <button onclick='player.needToChoose=false; update(\"map\"); startingDay();'>S’endormir sans rêve</button>";
                             }
                         }else if(rng === 4){
                             back = "<span class=important_txt>Le souk, le bazar</span>. C’est ce que tu as sur les lèvres en voyant, à ton retour, l’organisation du campement. Des outils qui traînent, des voiles non ferlées, des copeaux de bois et des éclats de roche partout, et de la poussière. La décision est prise de ranger tout ça au plus vite. Pour commencer : atelier confection de balais à bâbord et ré-arrimage du chariot à voile à tribord et ensuite tout le monde nettoie le camp.<br>Ce n’est qu’après ce travail supplémentaire mais nécessaire que tu peux te dire que la journée est terminée.";
                         }else if(rng === 5){
-                            back = "Allez ! Cela n’a que trop traîné ! Ce soir, tu inities une <span class=important_txt>réunion</span> officielle : tu veux les entendre et connaître leurs opinions à propos des erreurs que tu as pu commettre, quels sont leurs reproches, et surtout tu veux les questionner sur l’après "+definitionOf("tashi")+". Que veulent-ils ? Comment faire pour se reconstruire et repartir d’un nouveau souffle ?<br>La réunion fût grave mais nécessaire. La plupart ne te suivra plus après la forteresse des montagnes, si tant est que vous y arriviez. Ils ont tous beaucoup perdu et ont grandement mûri grâce à cette expérience. Tu aurais dit « vieillis ». Tu connaissais les risques encourus à rester lors de la "+definitionOf("farko kalama")+", n’est-ce pas, et malgré tout, tu leur as dit de garder le cap, de rester face au vent.<br>Cette réunion t’a toi même beaucoup ballottée en te faisant repenser une fois de plus à ces évènements. Et c’est le cœur lourd que tu pars t’endormir ce soir, un peu plus à l’écart des autres.";
+                            back = "Allez ! Cela n’a que trop traîné ! Ce soir, tu inities une <span class=important_txt>réunion</span> officielle : tu veux les entendre et connaître leurs opinions à propos des erreurs que tu as pu commettre, quels sont leurs reproches, et surtout tu veux les questionner sur l’après "+definitionOf("tashi")+". Que veulent-ils ? Comment faire pour se reconstruire et repartir d’un nouveau souffle ?<br>La réunion fût grave mais nécessaire. La plupart ne te suivra plus après la forteresse des montagnes, si tant est que vous y arriviez. Ils ont tous beaucoup perdu et ont grandement mûri grâce à cette expérience. Tu aurais dit « vieillis ». Tu connaissais les risques encourus à rester lors de la "+definitionOf("farko kalama")+", n’est-ce pas, et malgré tout, tu leur as dis de garder le cap, de rester face au vent.<br>Cette réunion t’a toi même beaucoup ballottée en te faisant repenser une fois de plus à ces évènements. Et c’est le cœur lourd que tu pars t’endormir ce soir, un peu plus à l’écart des autres.";
                         }else if(rng === 6){
                             back = "À l’approche de la nuit tout le monde devient plus calme, les mouvements sont plus lents, les esprits plus embrumés. La petite troupe vient se blottir au coin du feu. C’est le moment idéal pour discuter, échanger et rappeler aux plus jeunes ce qui compose l’environnement qui les entoure, à commencer par les grands herbivores que certains ont vus de plus ou moins loin ces derniers jours.<br>Le maître des steppes c’est le <span class=important_txt>pottok hexapode à crête</span>. Un cheval assez large d’épaule dont la robe est souvent claire, beige roussie ou gris cendre. Les poils, mi-longs, deviennent couramment plus sombres au niveau des pattes. Ces dernières au nombres de six lui permettent de se déplacer à une vitesse fulgurante afin d’échapper à la "+definitionOf("panthère coloristrate")+", son principal prédateur. Cette espèce de pottok est caractérisée par la crête droite qu’il porte. Cet alignement de poils, souvent foncés, part du haut de son crâne jusqu’à la base de ses omoplates, puis diminue de trois quart de hauteur pour aller rejoindre sa queue.<br>Un autre grand herbivore emblématique des steppes, mais plus rare dans les environs : le <span class=important_txt>yack quadkern</span>. Comme son nom l’indique, c’est un yack dont la particularité est d’avoir quatre cornes. Les espèces de yack sont nommées en fonction du nombre ou de la forme de leurs cornes. Celui à quatre cornes est l’espèce la plus abondante des steppes et du début des plateaux montagneux. Bien plus imposant que le pottok, habituellement au moins quatre fois plus gros, le yack peut être amadoué pour servir de moyen de transport de personnes ou de chargements encombrants. Certains marchands des premiers plateaux en font des échoppes mobiles leur permettant de vendre leurs produits sans tout défaire. Ses poils peuvent être utilisés, notamment pour le cordage, meilleurs que les fibres du "+definitionOf("lin abrufil")+" que vous trouvez en ce moment, mais pour les voiles il est préférable d’utiliser le poil des bouquetins vapolaines.<br>Ces derniers, vous les connaissez mieux car des membres de la "+definitionOf("kabila")+" en avaient élevés. Le <span class=important_txt>bouquetin vapolaine</span> est assez rare à l’état sauvage mais cependant extrêmement symbolique des steppes car c’est grâce à sa laine particulièrement vaporeuse que les voiles des "+definitionOf("zuriya mayafi")+" sont tissées, leur conférant légèreté et résistance. Les bouquetins sont friands d’une fleur leur donnant la langue bleue. Cette fleur, une centaurée, était tout le temps broutée par l’animal si bien qu’on la nomma <span class=important_txt>centaurée sans-tête</span>. N’essayez pas de la manger car si vous avez la chance de trouver la fleur de cette plante, l’histoire raconte qu’en plus de la langue bleue, votre pilosité pourrait s’en voir augmenter très fortement.<br>Sur ces paroles ayant fait rire tout le monde, tu proposes à ceux qui t’entourent d’aller se reposer car le lendemain ne sera pas une partie de plaisir.";
                         }else if(rng === 7){
@@ -763,20 +826,13 @@
                         let ress = "";
                         let nb;
                         let flipCoin = parseInt(Math.random()*2)//rope or not
-                        let rng = parseInt(Math.random()*7);//nb ressources
+                        let rng = parseInt(Math.random()*8);//nb ressources
                         if(flipCoin === 0){
                             if(rng === 0){//wood
                                 h1 += "bois";
-                                back = "La journée a été très ensoleillée, mais également très venteuse. Aucun nuage n’est resté au dessus de vos têtes. Et donc, tout naturellement, la chaleur du "+definitionOf("rana")+" ne s’est pas accumulée, c’est pourquoi <span class=important_txt>il fait froid ce soir</span>, très froid. Pour éviter que certains ne tombent malades, tu décides de rajouter quelques bûches au feu de camp.";
-                                if(player.wood === 0){
-                                    back += " Mais en allant en chercher tu te rends compte que vous n'en avez plus.";
-                                    button = "<button onclick='player.needToChoose=false; player.workerAvaible --; player.wounded ++; update(\"map\"); update(\"ressources\");'>+1 "+img("wounded")+"</button>";
-                                }else{
-                                    let nbr;
-                                    if(player.wood > 2){nbr = 2;}
-                                    else{nbr = player.wood;}
-                                    button = "<button onclick='player.needToChoose=false; player.wood -= "+nbr+"; update(\"map\"); update(\"ressources\");'>-"+nbr+" "+img("wood")+"</button>";
-                                }
+                                back = "La journée a été très ensoleillée, mais également très venteuse. Aucun nuage n’est resté au dessus de vos têtes. Et donc, tout naturellement, la chaleur du "+definitionOf("rana")+" ne s’est pas accumulée, c’est pourquoi <span class=important_txt>il fait froid ce soir</span>, très froid. Tu peux, pour éviter que certains ne tombent potentiellement malades, rajouter quelques bûches au feu de camp. Mais tu peux également essayer de leur faire comprendre que ces ressources sont précieuses et qu’il vaut mieux, pour survivre dans le temps, économiser le bois que vous peinez à ramasser. En espérant qu’aucun ne tombe malade. Combien de bûches souhaites-tu rajouter dans le foyer ?<br>";
+                                back += "<label for=woodInput>Quantité : </label><input type=number id=woodInput value=0 min=0 max="+player.wood+"> "+img("wood");
+                                button = "<button onclick='conseqQnty(\"wood\",0);'>Aucune</button> <button onclick='if(document.getElementById(\"woodInput\").value > player.wood){document.getElementById(\"woodInput\").value = player.wood;} if(document.getElementById(\"woodInput\").value > 0){player.wood -= document.getElementById(\"woodInput\").value;} if(player.wood < 0){player.wood = 0;} conseqQnty(\"wood\", document.getElementById(\"woodInput\").value);'>Cette quantité</button>";
                             }else if(rng === 1){//plank
                                 h1 += "planches";
                                 ress = "plank";
@@ -832,12 +888,9 @@
                                 }else{noRessources = true;}
                             }else if(rng === 5){//food
                                 h1 += "nourriture";
-                                ress = "food";
-                                if(player.food >= 3){
-                                    back = "Pour remonter le moral de ceux qui t’entourent et leur redonner de la force pour les jours qui arrivent, tu annonces une soirée que l’on aurait pu qualifier de festive en d’autres circonstances. Ainsi, tu augmentes, un peu, la <span class=important_txt>dose de nourriture</span> pour chacun. Les visages se détendent, un peu, et les conversations sont plus enjouées. Pour cette soirée au moins.";
-                                    nb = 3;
-                                    if(player.food >= 4){nb = 4;}
-                                }else{noRessources = true;}
+                                back = "Pour remonter le moral de ceux qui t’entourent et leur redonner de la force pour les jours qui arrivent, tu pourrais ce soir annoncer une soirée plus festive et de ce fait augmenter la faible portion de nourriture de chacun. Tu t’approches des caisses conservant celle-ci. Toujours trop peu. Finalement veux-tu vraiment augmenter les doses ? Combien de nourriture en plus souhaites-tu ajouter au repas ?<br>";
+                                back += "<label for=foodInput>Quantité : </label><input type=number id=foodInput value=0 min=0 max="+player.food+"> "+img("food");
+                                button = "<button onclick='conseqQnty(\"food\",0);'>Aucune</button> <button onclick='if(document.getElementById(\"foodInput\").value > player.food){document.getElementById(\"foodInput\").value = player.food;} if(document.getElementById(\"foodInput\").value > 0){player.food -= document.getElementById(\"foodInput\").value;} if(player.food < 0){player.food = 0;} conseqQnty(\"food\", document.getElementById(\"foodInput\").value);'>Cette quantité</button>";
                             }else if(rng === 6){//worker
                                 h1 += "main d'œuvre";
                                 let sideOfHurt = parseInt(Math.random()*3);
@@ -847,37 +900,61 @@
                                     else if(sideOfHurt === 1){back += "de la jambe droite";}
                                     else{back += "du bras gauche";}
                                     back += ".<br>Tu l’incites à se reposer de ses blessures et lui imposes de se ménager le lendemain.";
-                                    button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); player.workerAvaible -= 1; player.wounded += 1; update(\"map\"); update(\"ressources\");'>+1 "+img("wounded")+"</button>";
-                                }else{noRessources = true;}
+                                    button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); player.workerAvaible -= 1; player.wounded += 1; ethical -= "+ethicalPoints[ethicalName.indexOf("wounded")]+"; update(\"map\"); update(\"ressources\"); startingDay();'>+1 "+img("wounded")+"</button>";
+                                }else if(rng === 7 && crazyTravellers[1] > 0){
+                                    h1 = "Un vol";
+                                    back = "La soirée est à peine commencée que des disputes éclatent déjà. Tu t’approches d’un pas lourd vers le lieu d’où provient les cris et entre le lot et le stockage tu remarques qu’un couchage a disparu. Un de ceux que tu avais recueillis la veille s’est échappé avec une partie de vos ressources.Certains t’en veulent alors que d’autres te défendent. Tu essayes d’apaiser les tensions, promettant de faire plus attention à l’avenir.<br>Avant d’aller manger tu vas constater le vol : ";
+                                    let stealedRess = [Math.min(player.wood, parseInt(Math.random()*5)),
+                                                        Math.min(player.plank, parseInt(Math.random()*5)),
+                                                        Math.min(player.stone, parseInt(Math.random()*5)),
+                                                        Math.min(player.ore, parseInt(Math.random()*5)),
+                                                        Math.min(player.fiber, parseInt(Math.random()*5)),
+                                                        Math.min(player.sail, parseInt(Math.random()*1)),
+                                                        Math.min(player.food, parseInt(Math.random()*4))];//Balancing
+                                    let miniTxt = "";
+                                    for(i=0; i<7; i++){
+                                        if(stealedRess[i] > 0){miniTxt += " +"+stealedRess[i]+" "+img(ressourcesName[i]);}
+                                    }
+                                    back += miniTxt.slice(2)+" + "+img("worker");
+                                    button = "<button onclick='player.needToChoose=false; crazyTravellers[1] --; if()player.workerAvaible > 1){player.workerAvaible --;}else{player.wounded --;} player.workerTotal --; player.wood -= "+stealedRess[0]+"; player.plank -= "+stealedRess[1]+"; player.stone -= "+stealedRess[2]+"; player.ore -= "+stealedRess[3]+"; player.fiber -= "+stealedRess[4]+"; player.sail -= "+stealedRess[5]+"; player.food -= "+stealedRess[6]+"; update(\"dashboard\"); update(\"map\"); startingDay();'>S’endormir</button>";
+                                }
+                                else{noRessources = true;}
                             }else{noRessources = true;}
                         }else{//flipCoin === 1
-                            let randomQnty = parseInt(Math.random()*3)+3;//Balancing
+                            let randomQnty;//Balancing TODO
                             if(rng === 0){
                                 h1 += "bois"; ressPlayer = "wood";
+                                randomQnty = parseInt(Math.random()*2)+3;
                                 randomQnty = Math.min(player.wood, randomQnty);
                             }else if(rng === 1){
                                 h1 += "planche"; ressPlayer = "plank";
+                                randomQnty = parseInt(Math.random()*3)+12/2;
                                 randomQnty = Math.min(player.plank, randomQnty);
                             }else if(rng === 2){
                                 h1 += "roche"; ressPlayer = "stone";
+                                randomQnty = parseInt(Math.random()*2)+4;
                                 randomQnty = Math.min(player.stone, randomQnty);
                             }else if(rng === 3){
                                 h1 += "métal"; ressPlayer = "ore";
+                                randomQnty = parseInt(Math.random()*3)+8/2;
                                 randomQnty = Math.min(player.ore, randomQnty);
                             }else if(rng === 4){
                                 h1 += "fibre"; ressPlayer = "fiber";
+                                randomQnty = parseInt(Math.random()*3)+10/2;
                                 randomQnty = Math.min(player.fiber, randomQnty);
                             }else if(rng === 5){
                                 h1 += "voile"; ressPlayer = "sail";
+                                randomQnty = parseInt(Math.random()*2)+3-1;
                                 randomQnty = Math.min(player.sail, randomQnty);
                             }else if(rng === 6){
                                 h1 += "nourriture"; ressPlayer = "food";
+                                randomQnty = parseInt(Math.random()*2)+4/2;
                                 randomQnty = Math.min(player.food, randomQnty);
                             }
                             let addDisabled = [];
-                            back = "Une fois de plus <span class=important_txt>le vent a soufflé</span> toute la journée, s’en était épuisant et pas du tout agréable comme à l’accoutumé. Et comme tout le monde était occupé, personne n’a fait attention aux stocks de ressources que le vent soulevait.<br>";
+                            back = "Une fois de plus <span class=important_txt>le vent a soufflé</span> toute la journée, c’en était épuisant et pas du tout agréable comme à l’accoutumée. Et comme tout le monde était occupé, personne n’a fait attention aux stocks de ressources que le vent soulevait.<br>";
                             if(buildings.quantityTotal[buildings.name.indexOf("fortification")] > 0){
-                                back += "Ta fortification atténuant cette perte.<br>";
+                                back += "Ta fortification atténuant légèrement cette perte.<br>";
                                 randomQnty --;
                             }
                             if(buildings.quantityTotal[buildings.name.indexOf("rope")] > 0 && randomQnty > 0){
@@ -890,7 +967,8 @@
                                 back += "Malheureusement, une partie du stock s’est envolé avec le vent.";
                                 addDisabled[0] = "class=unclicable DISABLED"; addDisabled[1] = "";
                             }
-                            button = "<button onclick='player.needToChoose=false; buildings.quantityAvailable[buildings.name.indexOf(\"rope\")] -= 1; buildings.quantityTotal[buildings.name.indexOf(\"rope\")] -= 1; update(\"map\"); update(\"ressources\");' "+addDisabled[0]+">-1 "+buildings.img("rope")+"</button> <button onclick='player.needToChoose=false; player."+ressPlayer+" -= "+randomQnty+"; if(player."+ressPlayer+" < 0){player."+ressPlayer+" = 0;}; update(\"ressources\"); update(\"map\");' "+addDisabled[1]+">";
+                            let ropeQnty = parseInt(Math.random()*3+1)
+                            button = "<button onclick='player.needToChoose=false; buildings.quantityAvailable[buildings.name.indexOf(\"rope\")] -= "+ropeQnty+"; buildings.quantityTotal[buildings.name.indexOf(\"rope\")] -= "+ropeQnty+"; update(\"map\"); update(\"ressources\"); startingDay();' "+addDisabled[0]+">-"+ropeQnty+" "+buildings.img("rope")+"</button> <button onclick='player.needToChoose=false; player."+ressPlayer+" -= "+randomQnty+"; if(player."+ressPlayer+" < 0){player."+ressPlayer+" = 0;}; update(\"ressources\"); update(\"map\"); startingDay();' "+addDisabled[1]+">";
 
                             if(randomQnty > 0){
                                 button += "-"+randomQnty+" "+img(ressPlayer);//display
@@ -900,7 +978,7 @@
                             button += "</button>";
                         }
                         h1 += "... inéluctable ?";
-                        if(ress != ""){button = "<button onclick='player.needToChoose=false; player."+ress+" -= "+nb+"; update(\"map\"); update(\"ressources\");'>-"+nb+" "+img(ress)+"</button>";}
+                        if(ress != ""){button = "<button onclick='player.needToChoose=false; player."+ress+" -= "+nb+"; update(\"map\"); update(\"ressources\"); startingDay();'>-"+nb+" "+img(ress)+"</button>";}
 /////////////////////
                     }else if(rand === 2){//Other events
                         let rng = parseInt(Math.random()*(7+1+buildings.quantityTotal[buildings.name.indexOf("beacon")]));//Balancing
@@ -909,11 +987,11 @@
                             let randomCreature = parseInt(Math.random()*2);
                             let creature = [["doki", "cheetah"],
                             ["update(\"Tu t’approches de l’endroit et aperçoit un <span class=definition_txt title=cheval>pottok hexapode à crête</span>, la tête dans les fruits et légumes. Tu le chasses par de grands gestes et en faisant du bruit afin d’éviter ainsi qu’il se repaisse de vos maigres réserves.\");",
-                            "update(\"Tu renvois la personne en lui ordonnant de chasser la bête.<br>Après quelques instants, tu entends un cri et vois ton chasseur revenir le bras ensanglanté. Il raconte tremblant que le genre de guépard lui est tombé dessus. Ses yeux lancent des éclairs à ton égard. Le pauvre devra se reposer demain.<br>+1 <img src=images/ressources/wounded.png title=Blessé width=32px>\"); player.workerAvaible --; player.wounded ++;"],
+                            "update(\"Tu renvois la personne en lui ordonnant de chasser la bête.<br>Après quelques instants, tu entends un cri et vois ton chasseur revenir le bras ensanglanté. Il raconte tremblant que le genre de guépard lui est tombé dessus. Ses yeux lancent des éclairs à ton égard. Le pauvre devra se reposer demain.<br>+1 <img src=images/ressources/wounded.png title=Blessé width=32px>\"); player.workerAvaible --; player.wounded ++; ethical -= "+ethicalPoints[ethicalName.indexOf("wounded")]+";"],
                             ["update(\"Le doki en profite donc pour manger une partie de votre stock de fruits et légumes.\"); player.food -= 6; if(player.food < 0){player.food = 0};",
                             "update(\"Le cheetah n’est pas intéressé par les fruits et légumes et s’en va en émettant quelques grognements.\");"]];
                             back = "Une journée bruyante qui se finit enfin, après quelques désaccords et tensions au sein du groupe. Alors que le repas se déroulait dans le calme, un des tiens arrive à grands pas pour te rapporter qu’un <span class=important_txt>"+creature[0][randomCreature]+"</span> a été aperçu non loin du stock de fruits et légumes.<br>Que préconises-tu ?";
-                            button = "<button onclick='player.needToChoose=false;"+creature[1][randomCreature]+"update(\"ressources\"); update(\"dashboard\");'>S'approcher pour le chasser</button> <button onclick='player.needToChoose=false;"+creature[2][randomCreature]+"update(\"ressources\"); update(\"dashboard\");'>S'éloigner de l'endroit</button>";
+                            button = "<button onclick='player.needToChoose=false; "+creature[1][randomCreature]+"update(\"ressources\"); update(\"dashboard\"); startingDay();'>S'approcher pour le chasser</button> <button onclick='player.needToChoose=false; "+creature[2][randomCreature]+"update(\"ressources\"); update(\"dashboard\"); startingDay();'>S'éloigner de l'endroit</button>";
                         }else if(rng === 1 && buildings.quantityTotal[buildings.name.indexOf("trap")] > 0){
                             let randomCreature = parseInt(Math.random()*5);//more chance to catch rabbit
                             let creatureFood;
@@ -924,7 +1002,7 @@
                             else if(randomCreature === 1){back += definitionOf("bouquetin vapolaine"); creatureFood = 4; creatureFiber = 6;}
                             else{back += definitionOf("lièvre étoilé"); creatureFood = 2;}
                             back += ". Le piège que vous aviez installé semble avoir porté ses fruits. On t’explique cependant que l’animal, en se débattant, a brisé le piège. Il serait intéressant d’en faire un nouveau.";
-                            button = "<button onclick='player.needToChoose = false; player.food += "+creatureFood+"; player.fiber += "+creatureFiber+"; buildings.quantityAvailable[buildings.name.indexOf(\"trap\")] --; buildings.quantityTotal[buildings.name.indexOf(\"trap\")] --; update(\"ressources\"); update(\"map\");'>-1 "+buildings.img("trap")+" +"+creatureFood+" "+img("food");
+                            button = "<button onclick='player.needToChoose = false; player.food += "+creatureFood+"; player.fiber += "+creatureFiber+"; buildings.quantityAvailable[buildings.name.indexOf(\"trap\")] --; buildings.quantityTotal[buildings.name.indexOf(\"trap\")] --; update(\"ressources\"); update(\"map\"); startingDay();'>-1 "+buildings.img("trap")+" +"+creatureFood+" "+img("food");
                             if(creatureFiber > 0){button += " +"+creatureFiber+" "+img("fiber");}
                             button += "</button>";
                         }else if(rng === 2){
@@ -938,10 +1016,10 @@
                                 if(randomCreature === 0){
                                     back += "Ce sanglier fera parfaitement office de repas ce soir !";
                                     let randomise = parseInt(Math.random()*2)+4;
-                                    button = "<button onclick='player.needToChoose=false; buildings.quantityTotal[buildings.name.indexOf(\"trap\")] --; player.food += "+randomise+"; update(\"ressources\"); update(\"map\");'>-1 "+buildings.img("trap")+" +"+randomise+" "+img("food")+"</button>";
+                                    button = "<button onclick='player.needToChoose=false; buildings.quantityTotal[buildings.name.indexOf(\"trap\")] --; player.food += "+randomise+"; update(\"ressources\"); update(\"map\"); startingDay();'>-1 "+buildings.img("trap")+" +"+randomise+" "+img("food")+"</button>";
                                 }else{
                                     back += "Tu le libères dans la nuit, et le chasses d’un coup au sol sec et bruyant.";
-                                    button = "<button onclick='player.needToChoose=false; buildings.quantityTotal[buildings.name.indexOf(\"trap\")] --; update(\"ressources\"); update(\"map\");'>-1 "+buildings.img("trap")+"</button>";
+                                    button = "<button onclick='player.needToChoose=false; buildings.quantityTotal[buildings.name.indexOf(\"trap\")] --; update(\"ressources\"); update(\"map\"); startingDay();'>-1 "+buildings.img("trap")+"</button>";
                                 }
                             }else{
                                 back += "Tu n’avais pas prévu ça. Sans piège pour le retenir, il blesse <span class=important_txt>";
@@ -950,7 +1028,7 @@
                                 back += randomise+" personne";
                                 if(randomise >= 2){back += "s";}
                                 back += "</span> avant de réussir à trouver un chemin pour s’enfuir dans les herbes hautes.<br>C’est sûrement le retour de bâton de vous être installés ici.";
-                                button = "<button onclick='player.needToChoose=false; player.workerAvaible -= "+randomise+"; player.wounded += "+randomise+"; update(\"ressources\"); update(\"map\");'>+"+randomise+" "+img("wounded")+"</button>";
+                                button = "<button onclick='player.needToChoose=false; player.workerAvaible -= "+randomise+"; player.wounded += "+randomise+"; ethical -= "+randomise*ethicalPoints[ethicalName.indexOf("wounded")]+"; update(\"ressources\"); update(\"map\"); startingDay();'>+"+randomise+" "+img("wounded")+"</button>";
                             }
                         }else if(rng === 3){
                             h1 = "Trouvailles";
@@ -980,12 +1058,12 @@
                             if(rngRessources[4] > 0){back += " +"+rngRessources[4]+" "+img("fiber");}
                             if(rngRessources[5] > 0){back += " +"+rngRessources[5]+" "+img("sail");}
                             if(rngRessources[6] > 0){back += " +"+rngRessources[6]+" "+img("food");}
-                            button = "<button onclick='player.needToChoose=false; player.wood += "+rngRess[0]+"; player.plank += "+rngRess[1]+"; player.stone += "+rngRess[2]+"; player.ore += "+rngRess[3]+"; player.fiber += "+rngRess[4]+"; player.sail += "+rngRess[5]+"; player.food += "+rngRess[6]+"; update(\"ressources\"); update(\"map\");'>À l'est</button> ";
-                            button += "<button onclick='player.needToChoose=false; player.wood += "+rngRessources[0]+"; player.plank += "+rngRessources[1]+"; player.stone += "+rngRessources[2]+"; player.ore += "+rngRessources[3]+"; player.fiber += "+rngRessources[4]+"; player.sail += "+rngRessources[5]+"; player.food += "+rngRessources[6]+"; update(\"ressources\"); update(\"map\");'>À l'ouest</button>";
+                            button = "<button onclick='player.needToChoose=false; player.wood += "+rngRess[0]+"; player.plank += "+rngRess[1]+"; player.stone += "+rngRess[2]+"; player.ore += "+rngRess[3]+"; player.fiber += "+rngRess[4]+"; player.sail += "+rngRess[5]+"; player.food += "+rngRess[6]+"; update(\"ressources\"); update(\"map\"); startingDay();'>À l'est</button> ";
+                            button += "<button onclick='player.needToChoose=false; player.wood += "+rngRessources[0]+"; player.plank += "+rngRessources[1]+"; player.stone += "+rngRessources[2]+"; player.ore += "+rngRessources[3]+"; player.fiber += "+rngRessources[4]+"; player.sail += "+rngRessources[5]+"; player.food += "+rngRessources[6]+"; update(\"ressources\"); update(\"map\"); startingDay();'>À l'ouest</button>";
                         }else if(rng === 4 && player.wood === 0){
                             h1 = "Pas de bois, pas de feu, pas de feu...";
                             back = "Le nuit est noire et l’absence de feu faute de bois n’aide en rien.<br>C’est dans un stress palpable que tu passes la nuit ou du moins l’entames. En effet, il n’aura pas fallu longtemps avant de voir l’un des tiens affecté au renforcement de la surveillance nocturne revenir vers le camp après s’être fait agressé par une créature de la nuit. Il arrive tant bien que mal à s’en sortir mais ne sera pas apte à quoi que ce soit demain.<br>Vous vous resserrez les uns contre les autres et passez une fin de nuit affreuse, emplie de cauchemars.";
-                            button = "<button onclick='player.needToChoose=false; player.workerAvaible --; player.wounded ++; update(\"ressources\"); update(\"map\");'>+1 "+img("wounded")+"</button>";
+                            button = "<button onclick='player.needToChoose=false; player.workerAvaible --; player.wounded ++; ethical -= "+ethicalPoints[ethicalName.indexOf("wounded")]+"; update(\"ressources\"); update(\"map\"); startingDay();'>+1 "+img("wounded")+"</button>";
                         }else if(rng === 5){
                             h1 = "Une nouvelle source de nourriture";
                             back = "L’un des tiens tarde à rentrer tandis que les ombres s’allongent sur le campement. Alors que tu commences à préparer en vitesse une expédition pour aller enquêter, vous le voyez arriver, grand sourire, un panier rempli à ras bord de baies. Il claironne qu’il y en a plein non loin et semble très fier d’avoir découvert une nouvelle source de nourriture.<br>Avant que quiconque ne goûte à ces baies, tu les observes. Ce sont les baies du <span class=important_txt>buisson ";
@@ -995,19 +1073,19 @@
                                 back += "mutu";
                                 addButton += "Ils ont bien fait car ce buisson n’est pas celui que tu croyais. <span class=important_txt>Les baies mutu sont toxiques</span> et tous les gourmands passeront la nuit et le lendemain avec des crampes au ventre.<br>+";
                                 let randomMeeting = parseInt(player.workerAvaible/2);
-                                addButton += randomMeeting+" <img src=images/ressources/wounded.png title=Blessé width=32px>\"); player.workerAvaible -= "+randomMeeting+"; player.wounded += "+randomMeeting+";";
+                                addButton += randomMeeting+" <img src=images/ressources/wounded.png title=Blessé width=32px>\"); player.workerAvaible -= "+randomMeeting+"; player.wounded += "+randomMeeting+"; ethical -= "+randomMeeting*ethicalPoints[ethicalName.indexOf("wounded")]+";";
                             }else{
                                 back += "rayuwa";
                                 addButton += "Dommage d’être si méfiant car <span class=important_txt>les baies rayuwa sont délicieuses</span>.<br>+";
                                 let randomMeeting = parseInt(Math.random()*2)+6;
                                 addButton += randomMeeting+" <img src=images/ressources/food.png title=Nourriture width=32px>\"); player.food += "+randomMeeting+";";
                             }
-                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); "+addButton+" update(\"ressources\");'>Les manger, elles sont comestibles</button> <button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"Sans être vraiment sûr de toi tu décides de jeter l’ensemble du panier et tu interdis à quiconque de s’approcher du buisson.\");'>Les jeter, elles sont toxiques</button>";
+                            button = "<button onclick='player.needToChoose=false; update(\"dashboard\"); "+addButton+" update(\"ressources\"); startingDay();'>Les manger, elles sont comestibles</button> <button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"Sans être vraiment sûr de toi tu décides de jeter l’ensemble du panier et tu interdis à quiconque de s’approcher du buisson.\"); startingDay();'>Les jeter, elles sont toxiques</button>";
                             back += "</span>.<br>Que faire ?";
                         }else{
                             let randomMeeting = parseInt(Math.random()*3);//Balancing ?
                             h1 = "Voile à l'horizon";
-                            back = "En levant la tête pour observer le coucher du "+definitionOf("rana")+", tu plisses les yeux d’inquiétude en discernant des voiles à l’horizon. Ami ? Ennemi ? En tout cas elles se dirigent vers le campement. C’est sûr, ils vous ont vu";
+                            back = "En levant la tête pour observer le coucher du "+definitionOf("rana")+", tu plisses les yeux d’inquiétude en discernant des voiles à l’horizon. Ami ? Ennemi ? En tout cas elles se dirigent vers le campement. C’est sûr, ils vous ont vus";
                             if(buildings.quantityTotal[buildings.name.indexOf("beacon")] > 0){back += " sûrement à cause du mât roseau";}
                             back += " !<br>Tu affales en vitesse les voiles, couvre le feu alors que tout le monde adopte un positionnement défensif : plus ou moins cachés un outil à la main";
                             if(buildings.quantityTotal[buildings.name.indexOf("crossbow")] > 1){back += ", derrière les cranequins tripode";}
@@ -1016,16 +1094,143 @@
                             else if(buildings.quantityTotal[buildings.name.indexOf("fortification")] > 0){back += ", derrière la fortification temporaire";}
                             back += ".<br>Après de longues minutes d’attente dans le silence, les voiles arrivent aux abords du campement : <span class=important_txt>";
                             if(randomMeeting === 0){
-                                back += "un allié";
-                                button = "<button onclick='player.needToChoose = false; update(\"dashboard\"); ally();'>Accueillir</button>";
+                                back += "un allié</span> !<br>";
+                                
+                                let nbAllies = parseInt(Math.random()*buildings.quantityTotal[buildings.name.indexOf("beacon")]); //Balancing
+                                if(nbAllies <= 0){nbAllies = 1;}
+                                let randomGenre = parseInt(Math.random()*2);
+                                let subject;
+                                if(nbAllies < 2 && randomGenre === 0){subject = "elle";}
+                                else if(nbAllies < 2 && randomGenre === 1){subject = "il";}
+                                else if(nbAllies >= 2 && randomGenre === 0){subject = "elles";}
+                                else{subject = "ils";}
+                                back += "<p>" + subject.charAt(0).toUpperCase() + subject.slice(1) + " descen";
+                                if(nbAllies >= 2){back += "dent";}else{back += "d";}
+                                back += " de ";
+                                if(nbAllies >= 2){back += "leur ";}else{back += "son ";}
+                                back += definitionOf("zuriya mayafi") + " en agitant une étoffe blanche. De plus près tu remarques qu’"+subject+" semble";
+                                if(nbAllies >= 2){back += "nt";}
+
+                                let randomAlliesState = parseInt(Math.random()*4);
+                                let addAlliesButton = "";
+                                if(randomAlliesState === 0 || randomAlliesState === 1){
+                                    back += " <span class=important_txt>soulagé";
+                                    if(subject === "ils"){back += "s";}else if(subject === "elles"){back += "es"}
+                                    back += "</span> de vous voir. ";
+                                }else if(randomAlliesState === 2){
+                                    back += " <span class=important_txt>affamé";
+                                    if(subject === "ils"){back += "s";}else if(subject === "elles"){back += "es"}
+                                    back += "</span>, leurs corps marqués par cette privation. ";
+                                    addAlliesButton += "player.food -= "+nbAllies+";";
+                                }else{
+                                    if(nbAllies >= 2){back += " <span class=important_txt>blessés</span> avec des tâches de sang séché qui parsèment leurs vêtements. ";}else{back += " <span class=important_txt>blessé</span> avec des tâches de sang séché qui parsèment ses vêtements. ";}
+                                    addAlliesButton += "player.workerAvaible -= "+nbAllies+"; player.wounded += "+nbAllies+";";
+                                }
+
+                                back += subject.charAt(0).toUpperCase()+subject.slice(1)+" aimerai";
+                                if(nbAllies >= 2){back += "en";}
+                                back += "t sûrement rejoindre ton semblant de "+definitionOf("kabila")+". Mais avant d’aller plus loin tu ";
+                                if(nbAllies >= 2){back += "leur";}else{back += "lui";}
+                                back += " demandes comment ce fait-ce qu’"+subject;
+                                if(nbAllies >= 2){back += " soient arrivé";}else{back += " soit arrivé";}
+                                if(subject === "elle" || subject === "elles"){back += "e";}
+                                if(nbAllies >= 2){back += "s";}
+                                back += " là.<br>Pendant qu’"+subject+" te raconte";
+                                if(nbAllies >= 2){back += "nt";}
+                                back += " les péripéties traversées, tu observes ";
+                                if(nbAllies >= 2){back += "leurs";}else{back += "ses";}
+                                back += " faits et gestes. Rien de bien particulier en comparaison avec votre aventure. La seule chose que tu remarques, pour vraiment chercher la petite bête et préserver au mieux ton groupe, c’est ";
+                                if(nbAllies >= 2){back += "que l’un deux ";}else if(subject === "elle"){back += "qu’elle "}else{back += "qu’il ";}
+                                back += "<span class=important_txt>";
+
+                                let randomAlliesCrazyness = parseInt(Math.random()*8);
+                                let miniRand = parseInt(Math.random()*4);
+                                if(randomAlliesCrazyness === 0){
+                                    back += "semble fasciné par votre feu et essaye de s’en rapprocher";
+                                    addAlliesButton += "crazyTravellers[0] ++;";
+                                }else if(randomAlliesCrazyness === 1){
+                                    back += "lance des coups d’œil marqués par un bref mouvement de son masque vers vos stocks";
+                                    addAlliesButton += "crazyTravellers[1] ++;";
+                                }else if(randomAlliesCrazyness === 2){
+                                    back += "parle beaucoup des difficultés à trouver ";
+                                    addAlliesButton += "crazyTravellers[2] ++;";
+                                    if(miniRand === 0){back += "du bois"; addAlliesButton += "monomaniac.push(\"wood\");";}
+                                    else if(miniRand === 1){back += "de la roche";addAlliesButton += "monomaniac.push(\"stone\");";}
+                                    else if(miniRand === 2){back += "de la fibre";addAlliesButton += "monomaniac.push(\"fiber\");";}
+                                    else{back += "de la nourriture"; addAlliesButton += "monomaniac.push(\"food\");";}
+                                }else if(randomAlliesCrazyness === 3){
+                                    back += "se passe machinalement la main sous le masque";
+                                }else if(randomAlliesCrazyness === 4){
+                                    back += "boite très subtilement lorsqu’il se déplace";
+                                }else if(randomAlliesCrazyness === 5){
+                                    back += "a le haut de son vêtement de couleur rouge vif et un châle aux motifs étranges";
+                                }else if(randomAlliesCrazyness === 6){
+                                    back += "dégage une odeur épicée à travers son masque lorsqu’il prend la parole";
+                                }else{back += "détaille de haut en bas chacun des tiens, une main à la ceinture";}
+                                back += "</span>.<br>Une fois ";
+                                if(nbAllies >= 2){back += "leur";}else{back += "son";}
+                                back += " histoire terminée, "+subject+" te demande";
+                                if(nbAllies >= 2){back += "nt";}
+                                back += " effectivement de rejoindre ton groupe pour le reste du "+definitionOf("tashi");
+                                if(randomAlliesState === 2){back += " et de manger (-"+nbAllies+" "+img("food")+")";}
+                                else if(randomAlliesState === 3){back += " et de se reposer le lendemain";}
+                                back += ".";
+
+                                button = "<button onclick='player.needToChoose=false; update(\"map\"); ethical -= "+ethicalPoints[ethicalName.indexOf("not-ally")]+"; startingDay();'>Refuser</button> <button onclick='player.needToChoose=false;  player.workerTotal += "+nbAllies+"; player.workerAvaible += "+nbAllies+";"+addAlliesButton+"update(\"map\");";
+                                if(randomAlliesCrazyness === 2){
+                                    button += "update(\"Le lendemain matin tu te lèves plus tôt que d’habitude. Tu as mal dormi… Sûrement le fait d’avoir accueilli";
+                                    if(subject === "ils"){button += "des inconnus"}else if(subject === "elles"){button += "des inconnues"}else if(subject === "il"){button += "un inconnu."}else{button += "une inconnue."}
+                                    button += " Presque tout le monde est encore plongé dans son sommeil, certains se réveillent difficilement alors que ton regard est attiré par un lit vide, ";
+                                    if(nbAllies >= 2){button += "un de ceux occupés par les nouveaux arrivants."}
+                                    else if(subject === "elle"){button += "celui de l’inconnue arrivée hier."}
+                                    else{button += "celui de l’inconnu arrivé hier."}
+                                    button += "Tu demandes ce qu’il en est à ceux qui sont réveillés autour. Ils t’apprennent qu’";
+                                    if(subject === "elle"){button += "elle est partie avec"}else{button += "il est parti avec "}
+                                    if(miniRand === 0){button += "une hache couper du bois"}
+                                    else if(miniRand === 1){button += "une pioche casser de la roche"}
+                                    else if(miniRand === 2){button += "un panier prélever des fibres"}
+                                    else{button += "un panier cueillir de la nourriture"}
+                                    button += " par peur d’en manquer.\");";
+                                }
+                                button += "update(\"ressources\"); startingDay();'";
+                                if(randomAlliesState === 2 && player.food < nbAllies){button += "class=unclicable DISABLED";}
+                                button += ">Accepter</button>";
+
                             }else if(randomMeeting === 1){
-                                back += "un marchand";
+                                back += "un marchand</span> !";
                                 button = "<button onclick='player.needToChoose = true; update(\"dashboard\"); merchandise();'>Marchander</button>";
                             }else{
-                                back += "des pirates";
-                                button = "<button onclick='player.needToChoose = false; update(\"dashboard\"); fight();'>Attaquer</button>";
+                                let difficultyLevel;//Balancing
+                                if(board.spotJ[player.localisation] < 7){difficultyLevel = 1;}
+                                else if(board.spotJ[player.localisation] < 13){difficultyLevel = 4;}
+                                else{difficultyLevel = 6;}
+                                let nbPirates = parseInt(buildings.quantityTotal[buildings.name.indexOf("beacon")]*1.5 + difficultyLevel + Math.random()*3);//Balancing
+                                back += "des pirates</span> !<br>Aïe des pirates, tu n’y vois plus très loin car le feu est éteint. ";
+                                if(nbPirates >= 3){back += "Tu remarques que des ombres se glissent pour former un cercle autour de vous. ";}
+                                back += "Tu perçois par contre très bien des mouvements et tu estimes qu’il y a entre <span class=important_txt>"+Math.max(parseInt(nbPirates-Math.random()*3),1)+" et "+parseInt(nbPirates+Math.random()*3+1)+" pirates</span> autour de vous.<br>L’un d’eux prend d’ailleurs la parole, près de vos stocks, et vous réclame au vue de ce que vous avez : ";
+                                let pirateDemand = [Math.min(parseInt(player.wood/4+Math.random()*3), player.wood), //Balancing
+                                                    Math.min(parseInt(player.plank/4+Math.random()*4), player.plank),
+                                                    Math.min(parseInt(player.stone/4+Math.random()*3), player.stone),
+                                                    Math.min(parseInt(player.ore/4+Math.random()*4), player.ore),
+                                                    Math.min(parseInt(player.fiber/4+Math.random()*4), player.fiber),
+                                                    Math.min(parseInt(player.sail/2), player.sail),
+                                                    Math.min(parseInt(player.food/4+Math.random()*4), player.food)];
+                                let pDTxt = "";
+                                for(i=0; i<7; i++){
+                                    if(pirateDemand[i] > 0){pDTxt += " +"+pirateDemand[i]+" "+img(ressourcesName[i]);}
+                                }
+                                back += pDTxt.slice(2);
+                                back += "<br>Acceptes-tu le marché pour qu’ils vous laissent tranquille, ou lances-tu le signal d’attaque ?";
+                                button = "<button onclick='player.needToChoose=false; player.wood -= "+pirateDemand[0]+"; player.plank -= "+pirateDemand[1]+"; player.stone -= "+pirateDemand[2]+"; player.ore -= "+pirateDemand[3]+"; player.fiber -= "+pirateDemand[4]+"; player.sail -= "+pirateDemand[5]+"; player.food -= "+pirateDemand[6]+"; ethical -= ";
+                                if(nbPirates < player.workerTotal){button += ethicalPoints[ethicalName.indexOf("pirates-deal")];}
+                                else{button += 0;}
+                                button += "; update(\"ressources\"); update(\"dashboard\"); update(\"Tu acceptes le marché, et tu les aides même à charger la marchandise pendant qu’";
+                                if(nbPirates >= 2){button += "ils se moquent de toi et t’humilient.";}
+                                else{button += "il se moque de toi et t’humilie.";}
+                                if(nbPirates < player.workerTotal){button += " La position des tiens montre qu’ils ne soutiennent pas ta décision.";}
+                                else{button += " La position des tiens montre qu’ils soutiennent ta décision.";}
+                                button += "\"); startingDay();'>Accepter</button> <button onclick='player.needToChoose = false; update(\"dashboard\"); fight("+nbPirates+");'>Attaquer</button>";
                             }
-                            back += "</span> !";
                         }
 /////////////////////
                     }else{//Choices
@@ -1040,27 +1245,17 @@
                         }
                         if(rng === 0 && player.sail > 0){
                             h1 = "Pêcher dans le ciel ?";
-                            back = "Durant la journée, tu as entendu bourdonner et crépiter un essaim d’"+definitionOf("idoflames bariolés")+" non loin de ta zone d’activité. Tu soumets ce soir l’idée qui t’as traversée la tête à ce moment là : en capturer quelques uns pour fabriquer une "+definitionOf("nassolfière")+" et ainsi récolter aisément du gibier volant pour le reste de la traversée.<br>C’est une idée <span class=risk_percentage title=\"trois chances sur quatre d’être blessés\">très risquée</span> que d’attraper ces insectes et de les manipuler pour en extraire leur gaz. C’est pourquoi certains autour de toi s’écartent, réticents.<br>Souhaites-tu malgré tout les convaincre en prenant le risque de les blesser, et de dépenser l’<span class=important_txt>entièreté de vos voiles ";
-                            if(player.fiber > 0){back += "et fibres ";}
-                            back += "</span>pour accomplir ton objectif ? Ou souhaites-tu être prudent et ne pas entreprendre cette action dangereuse ?";
+                            back = "Durant la journée, tu as entendu bourdonner et crépiter un essaim d’"+definitionOf("idoflames bariolés")+" non loin de ta zone d’activité. Tu soumets ce soir l’idée qui t’as traversée la tête à ce moment là : en capturer quelques uns pour fabriquer une "+definitionOf("nassolfière")+" et ainsi récolter aisément du gibier volant pour le reste de la traversée.<br>C’est une idée <span class=important_txt>très risquée</span> que d’attraper ces insectes et de les manipuler pour en extraire leur gaz. C’est pourquoi certains autour de toi s’écartent, réticents.<br>Souhaites-tu malgré tout les convaincre en prenant le risque de les blesser, et dépenser des voiles pour accomplir ton objectif ? Ou souhaites-tu être prudent et ne pas entreprendre cette action dangereuse ?<br>";
+                            back += "<label for=nassolfiereInput>Quantité : </label><input type=number id=nassolfiereInput value=0 min=0 max="+player.sail+"> "+img("sail");
                             calcDmgCo(player.workerAvaible, 0.75);
-                            button = "<button onclick='"+pGU+" update(\"Pour éviter que les tiens ne se brûlent en manipulant le feu avec ces insectes, tu vas en leur sens et acceptes leurs arguments. Il faudra cependant être plus efficace lors des récoltes de baies et de racines comestibles lors des prochaines journées pour subvenir à vos besoins alimentaires.\");'>Prudence</button> ";
-                            button += "<button onclick='zepplin += player.sail; player.fiber=0; player.sail=0; player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; "+pGU+" update(\"Après avoir insisté un peu plus et avoir clairement démontré la nécessité de ces pièges célestes, le groupe se joint à toi pour la chasse aux idoflames.<br>Malgré de nombreuses mésaventures, vous arrivez ensemble à en attraper et à extraire le précieux gaz. Les rares doigts non brûlés réussissent, avant le début de cette nouvelle journée, à coudre ";
-                            if(player.sail >= 2){button += "quelques voiles entre elles pour former les ballons.";}
-                            else{button += "et plier la voile sur elle même pour former le ballon.";}
-                            button += "<br>Bilan de la journée : <span class=important_txt>";
-                            if(dmgCo >= 2){button += dmgCo + " blessés mais ";}
-                            else if(dmgCo > 0){button += " tu t'es blessé mais ";}
-                            button += player.sail + " nassolfière";
-                            if(player.sail >= 2){button += "s</span> qui vont ";}
-                            else{button += "</span> qui va ";}
-                            button += "ainsi permettre de se nourrir facilement de créatures volantes lors de chaque prochaines journées.\");'>Convaincre</button>";
+                            button = "<button onclick='"+pGU+" conseqQnty(\"nassolfière\",0); startingDay();'>Prudence</button> <button onclick='"+pGU+" if(document.getElementById(\"nassolfiereInput\").value > player.sail){document.getElementById(\"nassolfiereInput\").value = player.sail;} if(document.getElementById(\"nassolfiereInput\").value > 0){player.sail -= document.getElementById(\"nassolfiereInput\").value;} if(player.sail < 0){player.sail = 0;} conseqQnty(\"nassolfière\", document.getElementById(\"nassolfiereInput\").value, "+dmgCo+");'>Cette quantité</button>";
                         }else if(rng === 1 && (player.stone > 0 || statue > 0)){
                             if(statue === 0){
                                 h1 = "Prier Gragheskr ?";
-                                back = "Lors du repas du soir, tu remarques que certains de ceux qui te suivent déposent au sol une partie de leurs maigres ressources de nourriture. Font-ils les difficiles en ces temps de pénurie ? Tu vas les voir et en discutes avec eux. Ils t’expliquent que c’est une offrande à "+definitionOf("Gragheskr")+". Le débat est lancé sur l’utilité d’un tel acte et d’autres viennent très vite se rajouter à votre échange verbal. Suite à de nombreux arguments avancés, la question est posée : devez-vous ériger la plus belle des statues possible avec <span class=important_txt>toutes les roches en stock</span> en l’honneur de "+definitionOf("Gragheskr")+" et prier en espérant ses bonnes grâces ? Personne ne sait faire de statue donc il a un <span class=risk_percentage title=\"une chance sur quatre d’être blessés\">petit risque</span> de se blesser mais tous pensent que ça en vaut le coup.";
+                                back = "Lors du repas du soir, tu remarques que certains de ceux qui te suivent déposent au sol une partie de leurs maigres ressources de nourriture. Font-ils les difficiles en ces temps de pénurie ? Tu vas les voir et en discutes avec eux. Ils t’expliquent que c’est une offrande à "+definitionOf("Gragheskr")+". Le débat est lancé sur l’utilité d’un tel acte et d’autres viennent très vite se rajouter à votre échange verbal. Suite à de nombreux arguments avancés, la question est posée : devez-vous ériger la plus belle des statues possible avec <span class=important_txt>toutes les roches en stock</span> en l’honneur de "+definitionOf("Gragheskr")+" et prier en espérant ses bonnes grâces ? Personne ne sait faire de statue donc il a un <span class=important_txt>petit risque</span> de se blesser mais tous pensent que ça en vaut le coup.<br>";
+                                back += "<label for=statueInput>Quantité : </label><input type=number id=statueInput value=0 min=0 max="+player.stone+"> "+img("stone");
                                 calcDmgCo(player.workerAvaible, 0.25);
-                                button = "<button onclick='"+pGU+" conseqRisk(\"non\");'>Non</button> <button onclick='statue = player.stone; player.stone = 0; player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; "+pGU+" conseqRisk(\"accord\", "+dmgCo+");'>D'accord</button>";
+                                button = "<button onclick='"+pGU+" conseqQnty(\"statue\",0); startingDay();'>Non</button> <button onclick='"+pGU+" if(document.getElementById(\"statueInput\").value > player.stone){document.getElementById(\"statueInput\").value = player.stone;} if(document.getElementById(\"statueInput\").value > 0){player.stone -= document.getElementById(\"statueInput\").value;} if(player.stone < 0){player.stone = 0;} conseqQnty(\"statue\", document.getElementById(\"statueInput\").value, "+dmgCo+");'>Cette quantité</button>";
                             }else{
                                 h1 = "Un cadeau de la terre";
                                 back = "En arrivant au campement tu entends des remerciements et des louanges. Tu t’approches et remarques au centre du groupe formé par les tiens des ressources qui semblent sortir du sol, comme des bulles d’air qui explosent à la surface. Tu te mets à genoux et remercies également "+definitionOf("Gragheskr")+".<br>";
@@ -1068,19 +1263,19 @@
                                 z[0] = statue+parseInt(Math.random()*5);      z[1] = statue+parseInt(Math.random()*5);
                                 z[2] = statue+parseInt(Math.random()*5);      z[3] = statue+parseInt(Math.random()*5);
                                 back += "+"+z[0]+" "+img("wood")+" +"+z[1]+" "+img("stone")+" +"+z[2]+" "+img("fiber")+" +"+z[3]+" "+img("food");
-                                button = "<button onclick='player.wood += "+z[0]+"; player.stone += "+z[1]+"; player.fiber += "+z[2]+"; player.food += "+z[3]+";"+pGU+" update(\"map\");'>S'endormir</button>";
+                                button = "<button onclick='player.wood += "+z[0]+"; player.stone += "+z[1]+"; player.fiber += "+z[2]+"; player.food += "+z[3]+";"+pGU+" update(\"map\"); startingDay();'>S’endormir</button>";
                             }
                         }else if(rng === 2 && player.wood > 0){
                             h1 = "Entrer dans l'antre ?";
-                            back = "De retour au camp à la nuit tombée, l’une des tiens annonce avoir découvert <span class=important_txt>un antre</span> non loin de là : l’entrée d’un tunnel qui s’enfonce sous terre par une trappe délabrée. Une ancienne mine ? Quoi qu’il en soit, elle pense qu’il pourrait être très intéressant d’envoyer tout le monde pour consolider la structure et ainsi pouvoir fouiller ces galeries. C’est selon elle <span class=risk_percentage title=\"une chance sur deux d’être blessés\">moyennement risqué</span> et cela demanderait la <span class=important_txt>totalité de votre bois</span> pour aménager des poutres et avancer le plus loin possible afin de récupérer progressivement les ressources qui s’y trouvent.<br>Qu’en penses-tu ? Faut-il envoyer tes gens l’aider ?";
+                            back = "De retour au camp à la nuit tombée, l’une des tiens annonce avoir découvert <span class=important_txt>un antre</span> non loin de là : l’entrée d’un tunnel qui s’enfonce sous terre par une trappe délabrée. Une ancienne mine ? Quoi qu’il en soit, elle pense qu’il pourrait être très intéressant d’envoyer tout le monde pour consolider la structure et ainsi pouvoir fouiller ces galeries. C’est selon elle <span class=important_txt>moyennement risqué</span> et cela demanderait une partie de <span class=important_txt>votre bois</span> pour aménager des poutres et avancer le plus loin possible afin de récupérer progressivement les ressources qui s’y trouvent.<br>Qu’en penses-tu ? Faut-il envoyer tes "+definitionOf("aikin")+" l’aider ?<br>";
+                            back += "<label for=antreInput>Quantité : </label><input type=number id=antreInput value=0 min=0 max="+player.wood+"> "+img("wood");
                             calcDmgCo(player.workerAvaible, 0.5);
-                            let rNow = [player.wood+parseInt(Math.random()*5), player.wood+parseInt(Math.random()*3), player.wood+parseInt(Math.random()*5)];//Balancing
-                            button = "<button onclick='"+pGU+" conseqRisk(\"abandonner\");'>Abandonner</button> <button onclick='player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; player.stone += "+rNow[0]+"; player.ore += "+rNow[1]+"; player.food += "+rNow[2]+"; player.wood = 0; board.stoneAvaible["+player.localisation+"] += "+(3*player.wood+parseInt(Math.random()*5))+"; board.fiberAvaible["+player.localisation+"] += "+(2*player.wood+parseInt(Math.random()*5))+"; board.foodAvaible["+player.localisation+"] += "+(2*player.wood+parseInt(Math.random()*5))+";"+pGU+" conseqRisk(\"consolider\", ["+dmgCo+","+rNow+"]);'>Consolider</button>";//Balacing
+                            button = "<button onclick='"+pGU+" conseqQnty(\"antre\",0); startingDay();'>Abandonner</button> <button onclick='"+pGU+" if(document.getElementById(\"antreInput\").value > player.wood){document.getElementById(\"antreInput\").value = player.wood;} if(document.getElementById(\"antreInput\").value > 0){player.wood -= document.getElementById(\"antreInput\").value;} if(player.wood < 0){player.wood = 0;} conseqQnty(\"antre\", document.getElementById(\"antreInput\").value, "+dmgCo+"); startingDay();'>Cette quantité</button>";
                         }else if(rng === 3){
                             h1 = "Chevaucher le flux ?";
-                            back = "À la nuit tombée, tu te rends compte que tu t’es un peu trop éloigné des autres. Tu peines à retrouver ton chemin et l’obscurité associée à une bourrasque de vent te font dégringoler et rouler le long d’une pente. Par réflexe, tu apposes tes mains sur ta tête et ta nuque au niveau des parties non couvertes par le masque, tu écartes au maximum tes jambes pour freiner ta chute. Après quelques secondes qui te paraissent interminables, tu te stoppes après une glissade sur les fesses. Tu ouvres tes mains, regarde autour de toi. Tu sens le vent bien plus fort à cet endroit : <span class=important_txt>un flux</span>. Idéal pour se déplacer plus vite et gagner une journée sur la "+definitionOf("guguwa")+". Tu remontes la pente non sans mal et te guide grâce aux "+definitionOf("tauran")+" qui sont apparues.<br>Tu arrives ensuite rapidement au campement, guidé par les voix de ceux partis à ta recherche. Tu te dépêches de leur expliquer ta découverte, ce flux, et leur demandes ce qu’ils en pensent. Ils discutent entre eux et avec toi mais une réponse claire et rapide n’arrive pas à s’en dégager. Tant pis, tu décides de trancher suite à cet échange qui te semble interminable et contre-productif. En effet, il ne faut pas perdre une minute car le flux risque de changer de place ou de s’affaiblir. Que leur annonces-tu ?<br>Prendre le <span class=risk_percentage title=\"trois chances sur quatre d’être blessés\">grand risque</span> de se blesser à se déplacer dans le noir et dans le flux mais <span class=important_txt>ne pas perdre une journée</span> sur la "+definitionOf("guguwa")+", ou attendre le lendemain en espérant que le flux sera toujours là, même si personnellement tu n’y crois pas ?";
+                            back = "À la nuit tombée, tu te rends compte que tu t’es un peu trop éloigné des autres. Tu peines à retrouver ton chemin et l’obscurité associée à une bourrasque de vent te font dégringoler et rouler le long d’une pente. Par réflexe, tu apposes tes mains sur ta tête et ta nuque au niveau des parties non couvertes par le masque, tu écartes au maximum tes jambes pour freiner ta chute. Après quelques secondes qui te paraissent interminables, tu te stoppes après une glissade sur les fesses. Tu ouvres tes mains, regarde autour de toi. Tu sens le vent bien plus fort à cet endroit : <span class=important_txt>un flux</span>. Idéal pour se déplacer plus vite et gagner une journée sur la "+definitionOf("guguwa")+". Tu remontes la pente non sans mal et te guide grâce aux "+definitionOf("tauran")+" qui sont apparues.<br>Tu arrives ensuite rapidement au campement, guidé par les voix de ceux partis à ta recherche. Tu te dépêches de leur expliquer ta découverte, ce flux, et leur demandes ce qu’ils en pensent. Ils discutent entre eux et avec toi mais une réponse claire et rapide n’arrive pas à s’en dégager. Tant pis, tu décides de trancher suite à cet échange qui te semble interminable et contre-productif. En effet, il ne faut pas perdre une minute car le flux risque de changer de place ou de s’affaiblir. Que leur annonces-tu ?<br>Prendre le <span class=important_txt>grand risque</span> de se blesser à se déplacer dans le noir et dans le flux mais <span class=important_txt>ne pas perdre une journée</span> sur la "+definitionOf("guguwa")+", ou attendre le lendemain en espérant que le flux sera toujours là, même si personnellement tu n’y crois pas ?";
                             calcDmgCo(player.workerAvaible, 0.75);
-                            button = "<button onclick='"+pGU+" conseqRisk(\"attendre\");'>Attendre</button> <button onclick='player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; player.daysBeforeStorm ++; "+pGU+" conseqRisk(\"y aller\", "+dmgCo+");'>Y aller</button>";
+                            button = "<button onclick='"+pGU+" conseqRisk(\"attendre\"); startingDay();'>Attendre</button> <button onclick='player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; ethical -= "+dmgCo*ethicalPoints[ethicalName.indexOf("wounded")]+"; player.daysBeforeStorm ++; "+pGU+" conseqRisk(\"y aller\", "+dmgCo+"); startingDay();'>Y aller</button>";
                         }else if(rng === 4){
                             h1 = "Des voyageurs venus d’ailleurs ?";
                             let nbTrav = parseInt(Math.random()*2)+4;
@@ -1092,7 +1287,7 @@
                             rSteal[2] = parseInt(Math.random()*3);    rSteal[3] = parseInt(Math.random()*5);
                             rSteal[4] = parseInt(Math.random()*3);    rSteal[5] = parseInt(Math.random()*5);
                             rSteal[6] = nbTrav;
-                            back = "C’est un début de nuit calme. Peu de bruit aux alentours, pas de feu pour économiser du bois et aucune discussion car vous êtes tous très fatigués. Quelques rongeurs passent même nonchalamment à la lisière du camp observant ce tableau semblant fait de statues ou d’esprits errants. Ce n’est pas la première soirée qui se finit ainsi, amorphe. Cependant, tu entends tout d’un coup des bruits au loin. Tu tends l’oreille : des voiles qui claquent, des coques qui grincent… <span class=important_txt>d’autres voyageurs</span> du "+definitionOf("tashi")+". Tu demandes à ton voisin si il a entendu la même chose que toi. Il hoche la tête et fait signe qu’il part en reconnaissance, silencieux.<br>Il réapparaît furtivement une bonne demie-heure après. C’est un groupe de <span class=important_txt>"+nbTrav+" voyageurs</span>, visiblement peu armés, qui se sont arrêtés pour la nuit et qui repartiront, de ce qu’ils disent, à l’aube. Il propose de les piller, même si il reconnaît que cela semble <span class=risk_percentage title=\"trois chances sur quatre d’être blessés\">très risqué</span>. Il estime leur stock à : ";
+                            back = "C’est un début de nuit calme. Peu de bruit aux alentours, pas de feu pour économiser du bois et aucune discussion car vous êtes tous très fatigués. Quelques rongeurs passent même nonchalamment à la lisière du camp observant ce tableau semblant fait de statues ou d’esprits errants. Ce n’est pas la première soirée qui se finit ainsi, amorphe. Cependant, tu entends tout d’un coup des bruits au loin. Tu tends l’oreille : des voiles qui claquent, des coques qui grincent… <span class=important_txt>d’autres voyageurs</span> du "+definitionOf("tashi")+". Tu demandes à ton voisin si il a entendu la même chose que toi. Il hoche la tête et fait signe qu’il part en reconnaissance, silencieux.<br>Il réapparaît furtivement une bonne demie-heure après. C’est un groupe de <span class=important_txt>"+nbTrav+" voyageurs</span>, visiblement peu armés, qui se sont arrêtés pour la nuit et qui repartiront, de ce qu’ils disent, à l’aube. Il propose de les piller, même si il reconnaît que cela semble <span class=important_txt>très risqué</span>. Il estime leur stock à : ";
                             let mTxt = "";
                             for(i=0; i<7; i++){
                                 let min = rSteal[i]-parseInt(Math.random()*2);
@@ -1102,7 +1297,7 @@
                             }
                             back += mTxt;
                             back += "<br>Que préconises-tu ? Prendre le risque de blesser les tiens pour dérober leurs ressources, ou rester discret et ne rien faire pour ne pas se faire repérer ?";
-                            button = "<button onclick='"+pGU+" conseqRisk(\"rester discret\");'>Rester discret</button> <button onclick='player.workerTotal -= "+wWDeath+"; player.wounded = 0; player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; player.wood += "+rSteal[0]+"; player.plank += "+rSteal[1]+"; player.stone += "+rSteal[2]+"; player.ore += "+rSteal[3]+"; player.fiber += "+rSteal[4]+"; player.sail += "+rSteal[5]+"; player.food += "+rSteal[6]+"; "+pGU+" conseqRisk(\"dérober le stock\", ["+wWDeath+","+dmgCo+","+rSteal+"]);'>Dérober le stock</button>";
+                            button = "<button onclick='"+pGU+" conseqRisk(\"rester discret\"); startingDay();'>Rester discret</button> <button onclick='player.workerTotal -= "+wWDeath+"; player.wounded = 0; player.workerAvaible -= "+dmgCo+"; player.wounded += "+dmgCo+"; ethical -= "+dmgCo*ethicalPoints[ethicalName.indexOf("wounded")]+"; player.wood += "+rSteal[0]+"; player.plank += "+rSteal[1]+"; player.stone += "+rSteal[2]+"; player.ore += "+rSteal[3]+"; player.fiber += "+rSteal[4]+"; player.sail += "+rSteal[5]+"; player.food += "+rSteal[6]+"; "+pGU+" conseqRisk(\"dérober le stock\", ["+wWDeath+","+dmgCo+","+rSteal+"]); startingDay();'>Dérober le stock</button>";
                         }else if(rng === 5 && player.workerAvaible > 1){
                             h1 = "Nouveau bauta ?";
                             let mGod = ["Tsawol","Woushafigewa"];
@@ -1113,7 +1308,7 @@
                             back += "</span>. Au moins ils transportent avec eux des chariots dont un de nourriture, ce qui t’a permis de ne pas avoir à leur proposer vos rations. Et tu ne vas pas te plaindre : ils ne discutent pas trop avec toi, ils semblent davantage parler avec les plus jeunes, comme si ils étaient plus intéressants. Mais tu apprécies qu’ils ne soient pas dans tes pattes.<br>En fin de soirée, alors que tu allais les congédier pour que tout le monde aille dormir, celui avec un <span class=important_txt>masque ";
                             if(mGod === "Tsawol"){back += "au gousset accolé d'une ligne d'or";}
                             else{back += "aux lambrequins sable";}
-                            back += "</span> s’approche de toi, suivi d’un petit jeune de ton groupe. Celui qui te semble être le représentant de ces "+definitionOf("bautan")+" t’explique s’être longuement entretenu avec le jeune homme et il pense que ce dernier pourrait, avec ton accord, rejoindre sa troupe de "+definitionOf("bautan")+" de "+definitionOf(mGod)+". Il invoque une histoire de bienfait pour le jeune, d’absence de hasard et de connexion. Il vend ses principes et… tu t’endormirais presque quand soudain, il te parle de chariot. Tu sursautes, portes une main sur ta hache pensant qu’il veut s’en prendre à vos maigres ressources. Mais visiblement c’est l’inverse. Il te propose une partie de son stock en te pointant un chariot à voile, si tu laisses le jeune partir avec lui. Un coup d’œil au jeune, il semble d’accord, un coup d’œil au chariot, tu y estimes : ";
+                            back += "</span> s’approche de toi, suivi d’un petit jeune de ton groupe. Celui qui te semble être le représentant de ces "+definitionOf("bautan")+" t’explique s’être longuement entretenu avec le jeune homme et il pense que ce dernier pourrait, avec ton accord, rejoindre sa troupe de "+definitionOf("bautan")+" de "+definitionOf(mGod)+". Il invoque une histoire de bienfait pour le jeune, d’absence de hasard et de connexion. Il vend ses principes et… tu t’endormirais presque quand soudain, il te parle de chariot. Tu sursautes, portes une main sur ta hache pensant qu’il veut s’en prendre à vos maigres ressources. Mais visiblement c’est l’inverse. Il te propose une partie de son stock en pointant un chariot à voile, si tu laisses le jeune partir avec lui. Un coup d’œil au jeune, il semble d’accord, un coup d’œil au chariot, tu y estimes : ";
                             let bautanGive = [];
                             let nbProbaDayMax = player.daysBeforeStorm;
                             for(i=board.spotJ[player.localisation]+2; i<18; i+=2){
@@ -1127,13 +1322,13 @@
                                 bautanGive[7] = 1;
                             }
                             nbUnits = nbUnits/10;//to divide for each ressources
-                            bautanGive[0] = parseInt(nbUnits*2*3)-parseInt(Math.random()*3);if(bautanGive[0] < 0){bautanGive[0] = 0;}
-                            bautanGive[1] = parseInt(nbUnits*3*4)-parseInt(Math.random()*5);if(bautanGive[1] < 0){bautanGive[1] = 0;}
-                            bautanGive[2] = parseInt(nbUnits*2*4)-parseInt(Math.random()*3);if(bautanGive[2] < 0){bautanGive[2] = 0;}
-                            bautanGive[3] = parseInt(nbUnits*4*2)-parseInt(Math.random()*5);if(bautanGive[3] < 0){bautanGive[3] = 0;}
-                            bautanGive[4] =parseInt(nbUnits*2*10)-parseInt(Math.random()*5);if(bautanGive[4] < 0){bautanGive[4] = 0;}
-                            bautanGive[5] = parseInt(nbUnits*2)-parseInt(Math.random()*3);  if(bautanGive[5] < 0){bautanGive[5] = 0;}
-                            bautanGive[6] = parseInt(nbUnits*4)-parseInt(Math.random()*5);  if(bautanGive[6] < 0){bautanGive[6] = 0;}
+                            bautanGive[0] = parseInt(nbUnits*2*3)-parseInt(Math.random()*5);if(bautanGive[0] < 0){bautanGive[0] = 0;}
+                            bautanGive[1] = parseInt(nbUnits*3*4)-parseInt(Math.random()*7);if(bautanGive[1] < 0){bautanGive[1] = 0;}
+                            bautanGive[2] = parseInt(nbUnits*2*4)-parseInt(Math.random()*5);if(bautanGive[2] < 0){bautanGive[2] = 0;}
+                            bautanGive[3] = parseInt(nbUnits*4*2)-parseInt(Math.random()*7);if(bautanGive[3] < 0){bautanGive[3] = 0;}
+                            bautanGive[4] =parseInt(nbUnits*2*10)-parseInt(Math.random()*7);if(bautanGive[4] < 0){bautanGive[4] = 0;}
+                            bautanGive[5] = parseInt(nbUnits*2)-parseInt(Math.random()*5);  if(bautanGive[5] < 0){bautanGive[5] = 0;}
+                            bautanGive[6] = parseInt(nbUnits*4)-parseInt(Math.random()*7);  if(bautanGive[6] < 0){bautanGive[6] = 0;}
                             //Balancing
                             for(i=0; i<7; i++){//display
                                 if(bautanGive[i] > 0){
@@ -1146,33 +1341,36 @@
                             back += " <span class=important_txt>";
                             if(bautanGive[7] === 1){back += "ainsi que";}else{back += "sans";}
                             back += " le chariot</span> pour tout transporter. Si tout le monde est d’accord qu’importe le choix, c’est à toi de trancher. Qu’est-ce qui est le mieux pour l’ensemble de ceux qui te suivent ? Garder le jeune pour avoir plus de bras pour aider à survivre, ou le laisser partir vivre avec les bautan en échange de ces ressources ?";
-                            button = "<button onclick='"+pGU+" conseqRisk(\"garder\");'>Garder</button> <button onclick='player.workerAvaible --; player.workerTotal --; ";
+                            button = "<button onclick='"+pGU+" conseqRisk(\"garder\"); startingDay();'>Garder</button> <button onclick='player.workerAvaible --; player.workerTotal --; ";
                             if(bautanGive[7] === 1){button += "buildings.quantityTotal[buildings.name.indexOf(\"wagon\")] ++; ";}
-                            button += "player.wood += "+bautanGive[0]+"; player.plank += "+bautanGive[1]+"; player.stone += "+bautanGive[2]+"; player.ore += "+bautanGive[3]+"; player.fiber += "+bautanGive[4]+"; player.sail += "+bautanGive[5]+"; player.food += "+bautanGive[6]+"; "+pGU+" conseqRisk(\"laisser\", ["+bautanGive+"]);'>Laisser</button>";
+                            button += "player.wood += "+bautanGive[0]+"; player.plank += "+bautanGive[1]+"; player.stone += "+bautanGive[2]+"; player.ore += "+bautanGive[3]+"; player.fiber += "+bautanGive[4]+"; player.sail += "+bautanGive[5]+"; player.food += "+bautanGive[6]+"; "+pGU+" conseqRisk(\"laisser\", ["+bautanGive+"]); startingDay();'>Laisser</button>";
                         }else{//rng = 6-7-8
                             back = "C’est la fin d’après-midi quand tu vois une des femmes se diriger vers toi avec une corde lovée en bandoulière, et une torche éteinte à sa ceinture. Elle a l’habitude de vagabonder à droite et à gauche et en cette fin de journée elle t’apprend qu’elle a découvert ";
                             if(rng === 6){h1 = "Descendre en rappel ?"; back += "<span class=important_txt>une faille</span> avec du "+definitionOf("lin abrufil")+" tout en bas.";}
                             else if(rng === 7){h1 = "Fouiller un temple ?"; back += "l’entrée d’<span class=important_txt>un temple effondré</span> sur lui même, propice à la récolte de pierre.";}
                             else{h1 = "Escalader une paroi ?"; back += "une voie pour escalader <span class=important_txt>un plateau boisé</span> pour y récupérer du gros bois.";}
-                            back += "<br>C’est <span class=risk_percentage title=\"une chance sur deux d’être blessés\">moyennement risqué</span> de s’y rendre mais de ce qu’elle a entre-aperçu, vous pourriez y récolter : ";
-                            let z = parseInt(Math.random()*3+7);//Balancing
-                            back += (z-parseInt(Math.random()*2+1)) + " - " + (z+parseInt(Math.random()*2+1)) + " ";
+                            back += "<br>C’est <span class=important_txt>moyennement risqué</span> de s’y rendre mais de ce qu’elle a entre-aperçu, vous pourriez y récolter : ";
+                            let z;//Balancing : rand + little bit less than 2 workers time
+                            if(rng === 6){z = parseInt(Math.random()*5+15);}
+                            else if(rng === 6){z = parseInt(Math.random()*3+6);}
+                            else{z = parseInt(Math.random()*2+5);}
+                            back += (z-parseInt(Math.random()*3+1)) + " - " + (z+parseInt(Math.random()*3+1)) + " ";
                             if(rng === 6){back += img("fiber");}
                             else if(rng === 7){back += img("stone");}
                             else{back += img("wood");}
-                            back += "<br>Elle soumet l’idée que cela pourrait également être le moment opportun pour un travail d’équipe et que plus tu enverras de personnes avec elle, plus il y aura de <span class=risk_percentage title=\"1, 2 ou 3 chances sur 4\">chance de récolter</span> quelque chose. Apparemment c’est du <span class=important_txt>tout ou rien</span> : soit vous y arrivez, soit l’équipe rebrousse chemin bredouille, questions de sécurité et de risque obligent. Elle continue de t’abreuver de détails mais tu ne retiens rien d’autre que le nombre maximum de coéquipiers qui peuvent l’accompagner ne peut excéder deux à cause, d’après ce que tu comprends, de la corde, du poids et de la tension qu’elle peut supporter.<br>Combien de personnes veux-tu envoyer ?";
-                            button = "<button onclick='"+pGU+" conseqRisk(\"aucune\");'>Aucune</button>";
+                            back += "<br>Elle soumet l’idée que cela pourrait également être le moment opportun pour un travail d’équipe et que plus tu enverras de personnes avec elle, plus il y aura de <span class=important_txt>chance de récolter</span> quelque chose. Apparemment c’est du <span class=important_txt>tout ou rien</span> : soit vous y arrivez, soit l’équipe rebrousse chemin bredouille, questions de sécurité et de risque obligent. Elle continue de t’abreuver de détails mais tu ne retiens rien d’autre que le nombre maximum de coéquipiers qui peuvent l’accompagner ne peut excéder deux à cause, d’après ce que tu comprends, de la corde, du poids et de la tension qu’elle peut supporter.<br>Combien de personnes veux-tu envoyer ?";
+                            button = "<button onclick='"+pGU+" conseqRisk(\"aucune\"); startingDay();'>Aucune</button>";
                             for(i=1; i<=3; i++){
                                 button += " <button onclick='player.workerAvaible -= ";
                                 calcDmgCo(i, 0.5);
-                                button += dmgCo + "; player.wounded += " + dmgCo + "; ";
+                                button += dmgCo + "; player.wounded += " + dmgCo + "; ethical -= "+dmgCo*ethicalPoints[ethicalName.indexOf("wounded")]+";";
                                 let zz;
                                 if(Math.random() < 0.25*i){//success
                                     if(rng === 6){button += "player.fiber += "+z+";"; zz=z;}
                                     else if(rng === 7){button += "player.stone += "+z+";"; zz=z;}
                                     else{button += "player.wood += "+z+";"; zz=z;}
                                 }else{zz = 0;}
-                                button += pGU +" conseqRisk(\"nombre\", ["+rng+","+zz+","+dmgCo+"]);' ";
+                                button += pGU +" conseqRisk(\"nombre\", ["+rng+","+zz+","+dmgCo+"]); startingDay();' ";
                                 if(player.workerAvaible < i){button += "class=unclicable DISABLED";}
                                 button += ">";
                                 for(j=0; j<i; j++){button += img("worker")+" ";}
@@ -1186,15 +1384,38 @@
                     //First night
                     if(tutoStep === 1){
                         insideDiv = "<p>Lors de tes déplacements de lieu en lieu, ou de façon régulière chaque soir à la tombée de la nuit, en plus du fait que chaque personne mange une ration de nourriture, des évènements inattendus peuvent survenir et perturber le campement.<br>À la fin de ce premier déplacement laborieux et chargé en émotion, vous montez le camp. Tu décides alors de raconter l’histoire de <span class=important_txt>Mebruka</span> pour donner du courage et de l’espoir à ceux qui t’entourent.<br>À l’abri du vent, derrière le "+definitionOf("zuriya mayafi")+" à moitié retourné vous servant de tente pour la nuit, tu te poses dans l’herbe et inspires un long moment en fermant les yeux. Le sol est plus meuble qu’avant, la brise toujours chuchotante, la drisse du chariot claque légèrement, la douce odeur d’un "+definitionOf("acacia résimiel")+" flotte dans l’air, les battements de ton cœur semblent ralentir. Les derniers rayons de "+definitionOf("rana")+" réchauffent les corps avant le début de la nuit.</p>";
-                        insideDiv += "<p style='text-align:center;'><button onclick='player.needToChoose=false;update(\"gather\");'>S'endormir</button></p>";
+                        insideDiv += "<p style='text-align:center;'><button onclick='player.needToChoose=false; update(\"gather\"); startingDay();'>S’endormir</button></p>";
                         tutoStep=2;
                     }else{tutoStep=0;}
 
                     //Sacrifice
                     if(player.sacrificeMade >= 42){
                         insideDiv = "<h1>Navire divin</h1><p>Vous décidez de vous arrêter, non pas à cause de la fatigue qui se dessine sur tous les visages, ni à cause de la tombée du "+definitionOf("rana")+" à l’horizon et qu’il serait temps de s’occuper du campement, mais car vous êtes tombés nez à nez avec quelque chose d’incroyable : un <span class=important_txt>navire à voile</span> d’une rare beauté. Une coque intacte sculptée d’arabesques rehaussées d’un verni bleu-vert, des voiles comme neuves teintées à l’ancienne grâce à l’"+definitionOf("œillet veiné")+" et brodées de délicats symboles blancs le long de la chute, un pont large et sans éraflure tatoué de nœuds de bois aux formes géométriques et un gréement impeccable ponctué de touches de couleurs.<br>Après une bref analyse de cette merveille et ayant l’assurance qu’elle était abandonnée, tu décides d’ajouter ce cadeau du vent à votre flotte. Ainsi, vous pourrez transporter plus de ressources et de structures de lieux en lieux. Dommage que ce divin navire ne soit pas apparu la veille, cela vous aurez permis de ne pas jeter de ressources.</p>";
-                        insideDiv += "<p style='text-align:center;'><button onclick='player.needToChoose=false;update(\"map\");'>S'endormir</button></p>";
-                        player.sacrificeMade = "done";
+                        insideDiv += "<p style='text-align:center;'><button onclick='player.sacrificeMade = \"done\"; player.needToChoose=false; update(\"map\"); startingDay();'>S’endormir</button></p>";
+                    }
+
+                    //Ethical
+                    if(ethical <= 0 && player.workerTotal > 1){
+                        let namePeople = ["Dassin", "Ghumer", "Kenwa", "Ebeggi", "Ahar", "Fodi"];
+                        namePeople = namePeople[parseInt(Math.random()*namePeople.length)];
+                        let sexual;
+                        if(namePeople === "Dassin" || namePeople === "Kenwa"){sexual = "f";}
+                        else{sexual = "h";}
+                        insideDiv = "<h1>Départ en solitaire</h1><p>Ce soir ça gronde. Le tonnerre s’est personnifié en "+namePeople+" que tu avais tiré";
+                        if(sexual === "f"){insideDiv += "e";}
+                        insideDiv += " des décombres après la "+definitionOf("farko kalama")+". Depuis quelques temps, ";
+                        if(sexual === "f"){insideDiv += "elle";}
+                        else{insideDiv += "il";}
+                        insideDiv += " n’est pas du tout d’accord avec les choix que tu fais et celui de la nuit dernière l’a fait cogiter toute la journée. Sa décision est ce soir arrêtée, ";
+                        if(sexual === "f"){insideDiv += "elle";}
+                        else{insideDiv += "il";}
+                        insideDiv += " part en espérant survivre en étant ";
+                        if(sexual === "f"){insideDiv += "maîtresse";}
+                        else{insideDiv += "maître"}
+                        insideDiv += " de son destin.</p>";
+                        insideDiv += "<p style='text-align:center;'><button onclick='ethical += 100;";
+                        if(player.workerAvaible > 0){insideDiv += "player.workerAvaible --;";}
+                        insideDiv += "player.workerTotal --; player.needToChoose=false; update(\"map\"); update(\"ressources\"); startingDay();'>Laisser partir</button></p>";
                     }
 
                     //Turn again if noRessources
@@ -1208,6 +1429,7 @@
                 else if(witchDiv == "end"){
                     document.getElementById('dashboard_div').innerHTML = "";
                     document.getElementById('stat_div').innerHTML = "";
+                    update("ressources");
                     if(player.workerTotal <= 0){
                         insideDiv = "<h1>Défaite - Mort</h1>";
                         insideDiv += "<p>En voyant l’arme s’abattre sur toi tu réalises que vous n’étiez pas prêts, pas assez endurants, pas fait pour…</p>";
@@ -1234,11 +1456,14 @@
                     [howManyCredits("all") >= taxe[0]+taxe[1]+taxe[2], "Vie divine"+valDivine, "Mener une vie divine dans la forteresse"],
                     [player.workerTotal >= 10, "Fédérateur", "Former un groupe d'au moins 10 personnes"],
                     [player.workerTotal === 1, "Solitaire", "Seul toi ? Non, vous êtes plein dans ta tête"],
+                    [totalCrazyTravellers[0] > 0 || totalCrazyTravellers[1] > 0 || totalCrazyTravellers[2] > 0, "Asile particulier", "Illuminé: "+totalCrazyTravellers[0]+", voleur: "+totalCrazyTravellers[1]+", monomaniaque: "+totalCrazyTravellers[2]],
+                    [player.humanSacrifice >= 1, "Cultiste", "Effectuer au moins un sacrifice (x"+player.humanSacrifice+")"],
                     [statue > 0, "Bauta de Gragheskr", "Ériger une statue en l’honneur du serpent"],
                     [sake === "played", "Pousseur de chance", "Joueur de sake et mise en abymes"],
                     [ocarina === "played", "Musicien", "Apaiser les coeurs par la musique"],
                     [player.sacrificeMade === "done", "Élu", "Savoir sacrifier pour le vent"],
-                    [diffBuildings === buildings.name.length, "Constructeur", "Avoir construit une fois toutes les structures"]];
+                    [diffBuildings === buildings.name.length, "Constructeur", "Avoir construit une fois toutes les structures"],
+                    [buildings.quantityTotal[buildings.name.indexOf("spinnaker")] >= 3, "Fameux trois mâts", "Rajouter trois voiles sur son embarcation"]];
                     for(i=0; i<achievements.length; i++){
                         if(achievements[i][0]){
                             insideDiv += "<table class=achievements><tr><th>"+img("achieved")+" "+achievements[i][1]+"</th></tr><tr><td>"+achievements[i][2]+"</td></tr></table> ";
@@ -1250,6 +1475,31 @@
                     document.getElementById('main_div').innerHTML = insideDiv;
                 }
 ////////////////
+                else if(witchDiv == "stillworking"){
+                    witchMenu = ""; update("dashboard"); updateStat(player.localisation);
+                    insideDiv = "<h1>Fin de journée ?</h1><p>Il reste ";
+                    for(i=0; i<player.workerAvaible; i++){insideDiv += img("worker")+" ";}
+                    if(player.workerAvaible >= 2){insideDiv += " qui sont oisifs. Tu peux les assigner à des tâches ou les ";}
+                    else{insideDiv += " qui est oisif. Tu peux l’assigner à une tâche ou le ";}
+                    insideDiv += "laisser tranquille et attendre la nuit.</p><p style=\"text-align:center\"><button onclick='nextDay();'>Attendre la nuit</button></p>";
+                    document.getElementById('main_div').innerHTML = insideDiv;
+                }
+////////////////
+                else if(witchDiv == "options"){
+                    witchMenu = ""; update("dashboard"); updateStat(player.localisation);
+                    insideDiv = "<h1>Options</h1>";
+                    insideDiv += "<table><tr><td><label for=disB style=\"cursor:pointer\">Afficher les constructions sous les ressources</label></td><td><input id=disB type=checkbox ";
+                    if(options[1][1]){insideDiv += "onclick='options[1][1]=false; update(\"ressources\"); update(\"options\");' checked";}
+                    else{insideDiv += "onclick='options[1][1]=true; update(\"ressources\"); update(\"options\");'";}
+                    insideDiv += "></td></tr>";
+                    insideDiv += "<tr><td><label for=disT style=\"cursor:pointer\">Afficher les outils sous les ressources</label></td><td><input id=disT type=checkbox ";
+                    if(options[0][1]){insideDiv += "onclick='options[0][1]=false; update(\"ressources\"); update(\"options\");' checked";}
+                    else{insideDiv += "onclick='options[0][1]=true; update(\"ressources\"); update(\"options\");'";}
+                    insideDiv += "></td></tr>";
+                    insideDiv += "<tr><td style=\"cursor:pointer\" onclick='restartDay();' colspan=2>Recommencer la journée (récolte, affinage, outillage, construction)</td></tr></table>";
+                    document.getElementById('main_div').innerHTML = insideDiv;
+                }
+////////////////
                 else{
                     document.getElementById('main_div').innerHTML = witchDiv;
                 }
@@ -1257,38 +1507,135 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+            function conseqQnty(mRess, mQnty, dmgCo){
+                player.needToChoose=false; update("dashboard"); update("ressources");
+                let mTxt = '';
+                if(mQnty === '' || mQnty < 0){mQnty = 0;}
+                if(mRess === "wood"){
+                    if(mQnty === 0){
+                    mTxt = "Tu ne mets pas un seul morceau de bois de plus dans le feu. Les gens se serrent les uns les autres, sans te faire de place.";
+                    ethical -= ethicalPoints[ethicalName.indexOf("wood-none")];
+                    }else{
+                        mTxt = "Tu en rajoutes ";
+                        if(mQnty < player.workerTotal/2){mTxt += "très peu"; ethical += ethicalPoints[ethicalName.indexOf("wood-few")];}
+                        else if(mQnty >= player.workerTotal/2 && mQnty < player.workerTotal){mTxt += "quelques une"; ethical += ethicalPoints[ethicalName.indexOf("wood-some")];}
+                        else{mTxt += "beaucoup"; ethical += ethicalPoints[ethicalName.indexOf("wood-lot")];}
+                        mTxt += ". Certains hochent la tête, d’autres joignent leurs mains pour te remercier.<br>Au petit matin tu constates l’effet de ton choix sur tes hommes : <span class=important_txt>";
+                        let randomQnty = parseInt(Math.random()*(player.workerTotal-mQnty));
+                        if(randomQnty < 1){mTxt += "aucune gelure</span>, ils sont solides.";}
+                        else{
+                            player.workerAvaible -= randomQnty; if(player.workerAvaible < 0){player.workerAvaible = 0;}
+                            player.wounded += randomQnty;
+                            ethical -= ethicalPoints[ethicalName.indexOf("wounded")];
+                            mTxt += "certains ont le corps frigorifié</span>, rendant ";
+                            for(i=0; i<randomQnty; i++){mTxt += img("wounded")+" ";}
+                            mTxt += " inapte";
+                            if(randomQnty >= 2){mTxt += "s";}
+                            mTxt += " à travailler aujourd’hui.";
+                        }
+                    }
+                    update("ressources");
+                }else if(mRess === "food"){
+                    if(mQnty === 0){
+                        mTxt = "Tu laisses ton idée à l’état de graine, ayant peur de manquer de provisions pour la suite. Mais comme tu n’avais rien promis, le moral en reste inchangé.";
+                    }else{
+                        mTxt = "Tu décides de ";
+                        if(mQnty < player.workerTotal/2){mTxt += "légèrement";}
+                        else if(mQnty >= player.workerTotal/2 && mQnty < player.workerTotal){mTxt += "simplement";}
+                        else{mTxt += "grandement";}
+                        ethical += mQnty*ethicalPoints[ethicalName.indexOf("food-gain")];
+                        mTxt += " augmenter la ration de nourriture de ce soir. Les visages se détendent…";
+                    }
+                }else if(mRess === "nassolfière"){
+                    if(mQnty === 0){
+                        mTxt = "Pour éviter que les tiens ne se brûlent en manipulant le feu avec ces insectes, tu vas en leur sens et acceptes leurs arguments. Il faudra cependant être plus efficace lors des récoltes de baies et de racines comestibles lors des prochaines journées pour subvenir à vos besoins alimentaires.";
+                    }else{
+                        zepplin += parseInt(mQnty);
+                        player.workerAvaible -= dmgCo; player.wounded += dmgCo;
+                        ethical -= dmgCo*ethicalPoints[ethicalName.indexOf("wounded")];
+                        mTxt = "Après avoir insisté un peu plus et avoir clairement démontré la nécessité de ces pièges célestes, le groupe se joint à toi pour la chasse aux idoflames.<br>Malgré de nombreuses mésaventures, vous arrivez ensemble à en attraper et à extraire le précieux gaz. Les rares doigts non brûlés réussissent, avant le début de cette nouvelle journée, à coudre ";
+                        if(mQnty >= 2){mTxt += "quelques voiles entre elles pour former les ballons.";}
+                        else{mTxt += "et plier la voile sur elle même pour former le ballon.";}
+                        mTxt += "<br>Bilan de la journée : <span class=important_txt>";
+                        if(dmgCo >= 2){mTxt += dmgCo + " blessés mais ";}
+                        else if(dmgCo > 0){mTxt += " tu t'es blessé mais ";}
+                        mTxt += mQnty + " nassolfière";
+                        if(mQnty >= 2){mTxt += "s</span> qui vont ";}
+                        else{mTxt += "</span> qui va ";}
+                        mTxt += "ainsi permettre de se nourrir facilement de créatures volantes lors de chaque prochaines journées.";
+                    }
+                }else if(mRess === "statue"){
+                    if(mQnty === 0){
+                        mTxt = "Il y a trop de risque et trop de perte de ressources, vous ne pouvez pas vous le permettre selon toi. En plus, rien ne dit que la "+definitionOf("tehanegh")+" entende vos prières et verra vos offrandes. Mieux vaut rester solide sur vos acquis à ton avis.";
+                        ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
+                    }else{
+                        statue += parseInt(mQnty);
+                        player.workerAvaible -= dmgCo; player.wounded += dmgCo;
+                        ethical -= dmgCo*ethicalPoints[ethicalName.indexOf("wounded")];
+                        mTxt = "Tu penses également qu’il serait bon de demander l’aide de la "+definitionOf("tehanegh")+" c’est pourquoi tu décides de mener le chantier de construction de la statue. Après quelques heures nocturnes à trimer et de nombreuses blessures et éraflures";
+                        if(dmgCo > 0){
+                            mTxt += " (";
+                            let miniTxt = "";
+                            for(i=0; i<dmgCo; i++){miniTxt += " "+img("wounded");}
+                            mTxt += miniTxt.slice(1)+")";
+                        }
+                        mTxt += ", ce qui ressemble à une statue se tient devant toi, taillée dans la roche de manière approximative mais on reconnaît les écailles. Tu espères que malgré son aspect vous bénéficierez du soutien de "+definitionOf("Gragheskr")+".";
+                    }
+                }else if(mRess === "antre"){
+                    if(mQnty === 0){
+                        mTxt = "Envoyer des gens sous terre te semble trop risqué, surtout avec ces installations instables. De plus, tu n’es pas persuadé de trouver quoi que ce soit dans ces galeries miteuses.";
+                        ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
+                    }else{
+                        let valRess = [mQnty+parseInt(Math.random()*5), mQnty+parseInt(Math.random()*3), mQnty+parseInt(Math.random()*5)];//Balancing
+                        board.stoneAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*5));
+                        board.fiberAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*5));
+                        board.foodAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*5));//Balacing
+                        updateStat(player.localisation);
+                        player.workerAvaible -= dmgCo; player.wounded += dmgCo;
+                        ethical -= dmgCo*ethicalPoints[ethicalName.indexOf("wounded")];
+                        mTxt = "Ton avis concorde avec le sien et tu décides d’envoyer le groupe et le bois pour renforcer l’accès à cet antre que tu espères plein de richesse. Tout le monde descend et commence à consolider la structure.<br>Après plusieurs heures d’effort, tout le bois disponible a été utilisé pour soutenir la voûte.";
+                        if(dmgCo >=2){
+                            mTxt +=" Cela n’a pas été aisé car <span class=important_txt>"+dmgCo+" personnes ont été blessées</span>.";
+                        }else if(dmgCo === 1){
+                            mTxt +=" Cela n’a pas été aisé car <span class=important_txt>une personne a été blessée</span>.";
+                        }
+                        mTxt += "<br>De cette première expédition, vous arrivez à sortir : ";
+                        mTxt += valRess[0]+" "+img("stone")+" +"+valRess[1]+" "+img("ore")+" +"+valRess[2]+" "+img("food");
+                        mTxt += "<br>Le reste, il faudra le <span class=important_txt>Récolter</span> petit à petit, de plus en plus profondément, lors des jours suivants.";
+                    }
+                }
+                update("ressources");
+                startingDay();
+                document.getElementById('main_div').innerHTML = "<p>"+mTxt+"</p>";
+            }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
             function conseqRisk(buttonName, values){
                 let txtToMain = "";
                 if(buttonName === "non"){
-                    txtToMain = "Il y a trop de risque et trop de perte de ressources, vous ne pouvez pas vous le permettre selon toi. En plus, rien ne dit que la "+definitionOf("tehanegh")+" entende vos prières et verra vos offrandes. Mieux vaut rester solide sur vos acquis à ton avis.";
+                    //
                 }else if(buttonName === "accord"){
-                    txtToMain = "Tu penses également qu’il serait bon de demander l’aide de la "+definitionOf("tehanegh")+" c’est pourquoi tu décides de mener le chantier de construction de la statue. Après quelques heures nocturnes à trimer et de nombreuses blessures et éraflures";
-                    if(values > 0){
-                        txtToMain += " (";
-                        for(i=0; i<values; i++){txtToMain += img("wounded");}
-                        txtToMain +=")";
-                    }
-                    txtToMain += ", ce qui ressemble à une statue se tient devant toi, taillée dans la roche de manière approximative mais on reconnaît les écailles. Tu espères que malgré son aspect vous bénéficierez du soutien de "+definitionOf("Gragheskr")+".";
+                    //
                 }else if(buttonName === "abandonner"){
-                    txtToMain = "Envoyer des gens sous terre te semble trop risqué, surtout avec ces installations instables. De plus, tu n’es pas persuadé de trouver quoi que ce soit dans ces galeries miteuses.";
+                    //
                 }else if(buttonName === "consolider"){
-                    txtToMain = "Ton avis concorde avec le sien et tu décides d’envoyer le groupe et le bois pour renforcer l’accès à cet antre que tu espères plein de richesse. Tout le monde descend et commence à consolider la structure.<br>Après plusieurs heures d’effort, tout le bois disponible a été utilisé pour soutenir la voûte.";
-                    if(values[0] >=2){
-                        txtToMain +=" Cela n’a pas été aisé car <span class=important_txt>"+values[0]+" personnes ont été blessées</span>.";
-                    }else if(values[0] === 1){
-                        txtToMain +=" Cela n’a pas été aisé car <span class=important_txt>une personne a été blessée</span>.";
-                    }
-                    txtToMain += "<br>De cette première expédition, vous arrivez à sortir : ";
-                    txtToMain += values[1]+" "+img("stone")+" +"+values[2]+" "+img("ore")+" +"+values[3]+" "+img("food");
-                    txtToMain += "<br>Le reste, il faudra le <span class=important_txt>Récolter</span> petit à petit, de plus en plus profondément, lors des jours suivants.";
+                    //
                 }else if(buttonName === "attendre"){
                     txtToMain = "En ce début de matinée vous vous rendez sur le site de ta chute. Comme il fallait s’y attendre, plus de flux, le calme plat. Vous entamez la journée avec le moral au plus bas, certains viennent s’excuser. Tu ne le leur reproches pas vraiment ce qui s’est passé… après tout, ils auraient pu avoir raison même si ils ont moins d’expérience que toi.";
                 }else if(buttonName === "y aller"){
                     txtToMain = "N’en déplaise à certains, tu prends les choses en main, montes sur une caisse et de ta hauteur commences à lancer des ordres pour coordonner le groupe. Tu les encourages à se dépêcher et tu fais de même.<br>Le cortège se met en branle et vous louvoyez dans la nuit pour retrouver le flux. Tu te souviens facilement de l’endroit, et une fois tout le monde prêt, vous entrez dedans, d’un bloc. Le choc est violent. Beaucoup se blessent <span class=important_txt>";
-                    if(values > 0){txtToMain += "("+values+") ";}
+                    if(values > 0){
+                        txtToMain += "(";
+                        let forTxtToMain = "";
+                        for(i=0; i<values; i++){forTxtToMain += " "+img("wounded");}
+                        txtToMain += forTxtToMain.slice(1) + ") ";
+                    }
                     txtToMain += "</span>mais vous arrivez en un seul morceau en bas de la pente et continuez ainsi un peu avant que le flux ne s’atténue de lui même. Grâce à cette manœuvre vous n’avez pas perdu l’avance pris sur la "+definitionOf("guguwa")+" tout en restant à proximité des ressources du lieu à récolter. Vous montez un nouveau camp à la hâte et prenez quelques heures de repos avant le levé du "+definitionOf("rana")+".";
+                    ethical -= values*ethicalPoints[ethicalName.indexOf("wounded")];
                 }else if(buttonName === "rester discret"){
                     txtToMain = "Tu calmes les ardeurs de l’homme et, tout en lui donnant le reste de ton frugal repas, lui fais prendre conscience que finalement vos situations se ressemblent beaucoup. Il grogne, visiblement pas tout à fait d’accord, mais accepte le repas et part d’un pas lourds dormir, ou du moins se reposer.";
+                    ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
                 }else if(buttonName === "dérober le stock"){
                     txtToMain = "Après une mise au point de quelques signes discrets pour vous coordonner, tu traces sur le sol des formes pour expliquer la stratégie d’attaque. Vous allez les encercler et au signal vous jeter sur eux. Simple et efficace, en théorie. Place à la pratique.<br>Accroupis ou rampants, vous vous dirigez vers le groupe de voyageurs. Ils sont plus bruyants que tout à l’heure et mangent avec insouciance. Tant mieux pour vous. Le signal est donné. Vous vous ruez sur eux. Le combat fait rage avec vos armes improvisées et vous prenez rapidement l’avantage grâce à l’effet de surprise. En effet, en peu de temps vous arrivez à les mettre hors d’état de nuire et en profitez pour subtiliser ce qui n’a pas été abîmé durant la bataille.<br>C’est une fois retourné au campement que tu fais le bilan de l’opération : <span class=important_txt>";
                     if(values[0] >= 2){txtToMain += values[0] + " morts ";}
@@ -1304,8 +1651,11 @@
                     }
                     txtToMain += mTxt.slice(2);
                     txtToMain += "<br>Pas le temps de s’apitoyer, repos de courte durée avant d’entamer une nouvelle journée.";
+                    ethical -= values[0]*ethicalPoints[ethicalName.indexOf("dead")];
+                    ethical -= values[1]*ethicalPoints[ethicalName.indexOf("wounded")];
                 }else if(buttonName === "aucune"){
                     txtToMain = "Tu la connais depuis le temps, toujours très enthousiaste, sûre d’elle, très imaginative et force de proposition. Mais sur ce coup là, tu penses que ce sont des risques inutiles que tu ferais prendre aux tiens. Tu as besoin qu’ils soient frais et en forme car tu sais déjà ce qu’il devront faire comme tâche le lendemain. Pas de contorsionnisme ce soir.";
+                    ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
                 }else if(buttonName === "nombre"){
                     txtToMain = "À peine as-tu donné ton accord qu’elle fonce préparer le terrain à l’aide d’une torche pour s’éclairer.<br>Après plusieurs heures où tu ne sais pas grand-chose de ce qu’il se passe, tu la vois revenir faire son rapport. C’est ";
                     if(values[1] > 0){
@@ -1323,6 +1673,7 @@
                     }
                 }else if(buttonName === "garder"){
                     txtToMain += "Pas maintenant. Tu veux bien laisser le jeune adorer qui il veut mais une fois arrivés à la forteresse des montagnes. Choisir maintenant serait trop précipité. Et puis tout le groupe à besoin de lui, c’est dans l’intérêt commun que tu le convaincs de rester avec vous. Tes deux locuteurs semblent satisfaits par ta réponse et partent chacun de leur côté.";
+                    ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
                 }else{//laisser
                     txtToMain += "Si le jeune en a envie, et si de plus vous obtenez compensation, pourquoi refuser ? Le jeune s’en va avec le froissement des simarres des "+definitionOf("bautan")+". Il ne reste à sa place ";
                     if(values[7] === 1){txtToMain += "qu’un chariot bien rempli";}
@@ -1343,19 +1694,19 @@
             function updateStat(nbSpot){
                 insideDiv = "<h2>Ressources du lieu</h2>";
                 insideDiv += "<table><tr><td>";
-                if(player.vision.indexOf(nbSpot) === -1){insideDiv += approxRessources(board.woodAvaible[nbSpot]);}
+                if(player.vision.indexOf(nbSpot) === -1){insideDiv += "?";}
                 else{insideDiv += board.woodAvaible[nbSpot];}
                 insideDiv += "</td><td>"+img("wood")+"</td></tr>";
                 insideDiv += "<tr><td>";
-                if(player.vision.indexOf(nbSpot) === -1){insideDiv += approxRessources(board.stoneAvaible[nbSpot]);}
+                if(player.vision.indexOf(nbSpot) === -1){insideDiv += "?";}
                 else{insideDiv += board.stoneAvaible[nbSpot];}
                 insideDiv += "</td><td>"+img("stone")+"</td></tr>";
                 insideDiv += "<tr><td>";
-                if(player.vision.indexOf(nbSpot) === -1){insideDiv += approxRessources(board.fiberAvaible[nbSpot]);}
+                if(player.vision.indexOf(nbSpot) === -1){insideDiv += "?";}
                 else{insideDiv += board.fiberAvaible[nbSpot];}
                 insideDiv += "</td><td>"+img("fiber")+"</td></tr>";
                 insideDiv += "<tr><td>";
-                if(player.vision.indexOf(nbSpot) === -1){insideDiv += approxRessources(board.foodAvaible[nbSpot]);}
+                if(player.vision.indexOf(nbSpot) === -1){insideDiv += "?";}
                 else{insideDiv += board.foodAvaible[nbSpot];}
                 insideDiv += "</td><td>"+img("food")+"</td></tr>";
 
@@ -1364,20 +1715,26 @@
                     if(buildings.quantityTotal[buildings.name.indexOf("spinnaker")] > 0){
                         insideDiv += " <span title=\""+buildings.nameFr[buildings.name.indexOf("spinnaker")]+"\" style=\"cursor:help;\">+"+buildings.quantityTotal[buildings.name.indexOf("spinnaker")]+"</span>";}
                     insideDiv += "</td><td>"+img("time")+"</td></tr>";
-                    insideDiv += "<tr><td class=warning><span title=\"Nourriture pour le trajet ("+board.foodLost[nbSpot]+") + quotidienne ("+player.workerTotal+")\" style=\"cursor:help;\">-" +(board.foodLost[nbSpot]+player.workerTotal)+"</span></td><td>"+img("food")+"</td></tr></table>";
+                    insideDiv += "<tr><td class=warning><span title=\"Nourriture pour les deux jours de trajet ("+2*player.workerTotal+")\" style=\"cursor:help;\">-" +2*player.workerTotal+"</span></td><td>"+img("food")+"</td></tr></table>";
 
-                    insideDiv += "<button onclick='player.changeLocalisation(" +nbSpot+ "," +board.foodLost[nbSpot]+ "); board.upClass("+nbSpot+"); updateStat("+nbSpot+"); nextDay();' ";
+                    insideDiv += "<button onclick='player.changeLocalisation(" +nbSpot+ "); board.upClass("+nbSpot+"); player.vision.push("+nbSpot+"); updateStat("+nbSpot+"); nextDay();' ";
                     if(player.workerAvaible+player.wounded < player.workerTotal){insideDiv += "class=unclicable title='Nous avons besoin de tout le monde pour pouvoir partir' DISABLED";}
-                    else if(player.food < board.foodLost[nbSpot]+player.workerTotal){insideDiv += "class=unclicable title='Pas assez de nourriture' style=\"cursor:help;\" DISABLED";}
+                    else if(player.food < 2*player.workerTotal){insideDiv += "class=unclicable title='Pas assez de nourriture' style=\"cursor:help;\" DISABLED";}
                     else if(player.weight > player.weightMax){insideDiv += "class=unclicable title='Tu transportes trop de choses, supprime des ressources dans le Stock ou construit des structures de transport' style=\"cursor:help;\" DISABLED";}
                     insideDiv += ">Se déplacer</button>";
                 }else if(nbSpot == player.localisation){
                     insideDiv += "</table>";
                     if(player.daysBeforeStorm === 0){insideDiv += "<span class=warning>Il faut partir<br>maintenant !</span><br>";}
                     else if(player.daysBeforeStorm === 1){insideDiv += "<span class=warning>Dernier jour<br>il faut accumuler de la nourriture pour pouvoir faire le voyage</span><br>";}
-                    insideDiv += "<button onclick='nextDay();'";
+                    if(player.workerAvaible >= 1){
+                        insideDiv += "<button onclick='update(\"stillworking\");'";
+                    }else{
+                        insideDiv += "<button onclick='nextDay();'";
+                    }
                     if(player.needToChoose || tutoStep == 1){insideDiv += " class=unclicable DISABLED";}
-                    insideDiv += ">Fin de journée</button>";
+                    if(player.daysBeforeStorm === 0 || player.food+player.foodNextDay+zepplin < player.workerTotal){
+                        insideDiv += ">/!\\ Mort /!\\</button>";
+                    }else{insideDiv += ">Fin de journée</button>";}
                 }else{
                     insideDiv += "</table>";
                 }
@@ -1410,6 +1767,12 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+            function firstHumanSacrifice(){
+                document.getElementById('main_div').innerHTML = "C’est la première fois que tu fais ça. Tu es très chamboulé, et tu ne sembles pas être le seul. Heureusement, on t’explique comment procéder. Tu as choisi celui qui te semblait le moins apte à suivre, le plus faible. Mais est-ce le bon choix ? Tu n’en sais rien. Il a l’air terrifié. Mais il a compris et accepté son sort, ce qui te facilite grandement la tâche. Tu lui as dis que ça irait vite, qu’il s’envolerait, ainsi sacré, pour rejoindre les alizés. Qu’il donnera la force à "+definitionOf("Woushafigewa")+" de souffler pour vous. C’est ce qu’il voulait entendre. Ça l’a rassuré.<br>Après les paroles et les gestes rituels de rigueur tu lui as mis feu. Il s’est consumé comme une brindille et s’est envolé renforçant l’armée des vents pour vous permettre d’avancer… Un jour de plus.";
+            }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
             function img(name){
                 let nameFR;
                 if(name === "wood"){nameFr = "Bois";}
@@ -1435,6 +1798,7 @@
                 else if(name === "taxe-base"){nameFr = "Taxe pour la forteresse";}
                 else if(name === "taxe-1st"){nameFr = "Coussin : objectif supplémentaire, mener une vie paisible";}
                 else if(name === "taxe-2nd"){nameFr = "Coussin brodé : objectif supplémentaire, mener une vie divine";}
+                else if(name === "map"){nameFr = "Carte de la région";}
                 else{nameFr = "ERROR";}
 
                 return "<img src=images/ressources/"+name+".png title='"+nameFr+"' width=32px>";
@@ -1491,14 +1855,12 @@
             }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            
-            function approxRessources(nbOfThisRess){//Balancing
-                if(nbOfThisRess === 0){return "<span title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" style=\"cursor:help; color:#be7836\">---</span>";}
-                else if(nbOfThisRess < 10){return "<span title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" style=\"cursor:help; color:#be7836\">très peu</span>";}
-                else if(nbOfThisRess < 25){return "<span title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" style=\"cursor:help; color:#fca048\">modérée</span>";}
-                else if(nbOfThisRess < 35){return "<span title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" style=\"cursor:help; color:#fca048\">beaucoup</span>";}
-                else{return "<span title=\"Pour plus de précision, faites l’inventaire du lieu dans Carte\" style=\"cursor:help\">profusion</span>";}
-                return nbOfThisRess;
+
+            function tipTrigger(mWitchM){
+                let mTxt = "<img src=images/ressources/tip-trigger.png class=tip_trigger onclick='tipDisplayed["+tipName.indexOf(mWitchM)+"]=false; ";
+                if(mWitchM === "map"){mTxt += "tipDisplayed["+tipName.indexOf("inventory")+"]=false; tipDisplayed["+tipName.indexOf("sacrifice")+"]=false; tipDisplayed["+tipName.indexOf("secondToLastDay")+"]=false; tipDisplayed["+tipName.indexOf("tooHeavy")+"]=false;";}
+                mTxt += " update(\""+mWitchM+"\");' title=\"Afficher le fonctionnement\" width=32px>";
+                return mTxt;
             }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1582,7 +1944,7 @@
                     buildings.quantityTotal[p] --;
                     if(buildings.quantityAvailable[p] > 0){buildings.quantityAvailable[p] = 0;}
                 }
-                buildings.quantityTotal[buildings.name.indexOf(nameOfBuilding)] ++;
+                buildings.quantityTotal[buildings.name.indexOf(nameOfBuilding)] += buildings.nbBuildCreate[i];
             }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1599,7 +1961,7 @@
                 //Balancing
                 let wagonLight = -200;
                 let wagonLargeLight = -400;
-                let wagonDivin = -1000;
+                let wagonDivin = -500;
                 let weightsum = 0;
                 let lightsum = 0;
                 let interweightsum = 0;
@@ -1765,7 +2127,7 @@
                         if(posP > posA){insideDiv += "Bravo, c'est gagné !";}
                         else if(posP < posA){insideDiv += "Mince, c'est perdu. Revanche ?";}
                         else{insideDiv += "Égalité parfaite : il faut vous départager !";}
-                        insideDiv += "<br><button onclick='playSake(0,0, undefined, [true,true,true,true], true, false);'>Re-lancer les baguettes</button> <button onclick='player.needToChoose=false; update(\"map\");'>Arrêter</button>";
+                        insideDiv += "<br><button onclick='playSake(0,0, undefined, [true,true,true,true], true, false);'>Re-lancer les baguettes</button> <button onclick='player.needToChoose=false; update(\"dashboard\"); update(\"map\"); startingDay();'>Arrêter</button>";
                     } 
                 }else{
                     let countFail = 0;
@@ -1802,19 +2164,13 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            function fight(){
+            function fight(nbPirates){
                 let crossbow = buildings.quantityTotal[buildings.name.indexOf("crossbow")];
-                let difficultyLevel;//Balancing
-                if(board.spotJ[player.localisation] < 7){difficultyLevel = 1;}
-                else if(board.spotJ[player.localisation] < 13){difficultyLevel = 4;}
-                else{difficultyLevel = 7;}
-
-                let nbPirates = buildings.quantityTotal[buildings.name.indexOf("beacon")]*2 + difficultyLevel + parseInt(Math.random()*3);//Balancing
                 let nbPiratesStart = nbPirates;
                 let insideDiv = "<p>";
-                if(nbPirates >= 2){insideDiv += "Ils étaient <span class=important_txt>"+nbPirates+" pirates enrubanés</span>";}
+                if(nbPirates >= 2){insideDiv += "Ils étaient au final <span class=important_txt>"+nbPirates+" pirates enrubanés</span>";}
                 else{insideDiv += "C'était <span class=important_txt>un pirate isolé</span>";}
-                insideDiv += ", armes au poing. Grâce à votre connaissance du terrain vous avez pu en premier ";
+                insideDiv += ", armes au poing. Grâce à votre connaissance du terrain et à votre signal furtif pour attaquer vous avez pu en premier ";
                 if(nbPirates >= 2){insideDiv += "leur";}else{insideDiv += "lui";}
                 insideDiv += " infliger de lourdes pertes : <span class=important_txt>";
 
@@ -1872,6 +2228,8 @@
                         else{insideDiv += "sa";}
                         insideDiv += " part n'a pu être portée";
                     }
+                    ethical -= hurt*ethicalPoints[ethicalName.indexOf("wounded")];
+                    ethical -= throat*ethicalPoints[ethicalName.indexOf("dead")];
                     insideDiv += ". ";
                     if(player.workerTotal > 0){
                         insideDiv += "Le combat a continué jusqu’à la mort.";
@@ -1891,11 +2249,14 @@
                                 player.workerTotal -= throat; player.workerAvaible -= throat;
                                 player.workerAvaible -= hurt; player.wounded += hurt;
                                 if(player.workerAvaible < 0){player.workerTotal += player.workerAvaible; player.workerAvaible = 0;}
+                                ethical -= hurt*ethicalPoints[ethicalName.indexOf("wounded")];
+                                ethical -= throat*ethicalPoints[ethicalName.indexOf("dead")];
                             }
                         }
                     }
                 }
                 if(player.workerTotal > 0){
+                    ethical += ethicalPoints[ethicalName.indexOf("pirates-win")];
                     insideDiv += "<br>Après avoir fait le nécessaire pour ceux qui t’accompagnent, tu fouilles ";
                     if(nbPiratesStart >= 2){insideDiv += "leur ";}else{insideDiv += "son ";}
                     insideDiv += definitionOf("zuriya mayafi") + " et trouve en récompense :<br>";
@@ -1915,27 +2276,48 @@
 
             function merchandise(credits){
                 if(typeof credits == 'undefined'){credits = 0;}
-                let mPriceSell = [4, 1, 3, 2, 1, 10, 3];//Balancing
-                let mPriceBuy = [6, 2, 4, 3, 2, 14, 4];//Balancing
+                let mPriceSell;
+                let mPriceBuy;//Balancing m=myself
+                if(board.fieldName[player.localisation] === "boisement clairsemé"){
+                    mPriceSell = [4, 1, 0, 0, 0, 0, 3];
+                    mPriceBuy = [0, 0, 3, 2, 1, 10, 3];
+                }else if(board.fieldName[player.localisation] === "affleurement rocheux"){
+                    mPriceSell = [0, 0, 3, 2, 0, 0, 3];
+                    mPriceBuy = [4, 1, 0, 0, 1, 10, 3];
+                }else if(board.fieldName[player.localisation] === "étendue de lin"){
+                    mPriceSell = [0, 0, 0, 0, 1, 10, 3];
+                    mPriceBuy = [4, 1, 3, 2, 0, 0, 3];
+                }else{
+                    mPriceSell = [4, 1, 3, 2, 1, 10, 3];//Base
+                    mPriceBuy = [6, 2, 4, 3, 2, 14, 4];
+                }
                 let insideDiv = "<p>Le marchand te propose de faire un échange de ressources à bon prix. Du haut de son chariot à voile bien rempli, il affirme que chez lui ce n’est pas cher, qu’il faut en profiter.</p>";
                 insideDiv += "<div style=\"text-align:center;\"><table id=merchandise><tr><th colspan=2>Ressources personnelles</th><th rowspan=2>Monnaie<br>d'échange</th><th colspan=2>Ressources du marchand</th></tr><tr><th>Ressource</th><th>Vendre</th><th>Acheter</th><th>Ressource</th></tr>";
 
                 let ressourcePlayer = [player.wood, player.plank, player.stone, player.ore, player.fiber, player.sail, player.food];
                 for(i=0; i<ressourcesName.length; i++){
-                    insideDiv += "<tr><td>"+ressourcePlayer[i]+" "+img(ressourcesName[i])+"</td><td><button onclick='player."+ressourcesName[i]+" --; update(\"ressources\"); merchandise("+(credits+mPriceSell[i])+");'";
-                    if(ressourcePlayer[i] === 0){insideDiv += " class=unclicable DISABLED";}
-                    insideDiv += ">+"+mPriceSell[i]+"</button></td>";
+                    insideDiv += "<tr><td>"+ressourcePlayer[i]+" "+img(ressourcesName[i])+"</td><td>";
+                    if(mPriceSell[i] > 0){
+                        insideDiv += "<button onclick='player."+ressourcesName[i]+" --; update(\"ressources\"); merchandise("+(credits+mPriceSell[i])+");'";
+                        if(ressourcePlayer[i] === 0){insideDiv += " class=unclicable DISABLED";}
+                        insideDiv += ">+"+mPriceSell[i]+"</button>";
+                    }
+                    insideDiv += "</td>";
                     if(i === 0){insideDiv += "<td rowspan=7>"+credits+"</td>";}
-                    insideDiv += "<td><button onclick='player."+ressourcesName[i]+" ++; update(\"ressources\"); merchandise("+(credits-mPriceBuy[i])+");'";
-                    if(credits < mPriceBuy[i]){insideDiv += " class=unclicable DISABLED";}
-                    insideDiv += ">-"+mPriceBuy[i]+"</button></td><td>"+img(ressourcesName[i])+"</td></tr>";
+                    insideDiv += "<td>";
+                    if(mPriceBuy[i] > 0){
+                        insideDiv += "<button onclick='player."+ressourcesName[i]+" ++; update(\"ressources\"); merchandise("+(credits-mPriceBuy[i])+");'";
+                        if(credits < mPriceBuy[i]){insideDiv += " class=unclicable DISABLED";}
+                        insideDiv += ">-"+mPriceBuy[i]+"</button>";
+                    }
+                    insideDiv += "</td><td>"+img(ressourcesName[i])+"</td></tr>";
                 }
 
-                insideDiv += "</table></div><p style=\"text-align:center;\"><button onclick='player.needToChoose = false; update(\"map\");'>Quitter le marchand</button></p><p><details><summary>Structures</summary>";
+                insideDiv += "</table></div><p style=\"text-align:center;\"><button onclick='player.needToChoose = false; update(\"map\"); startingDay();'>Quitter le marchand</button></p><p><details><summary>Structures</summary>";
                 for(i=0; i<buildings.name.length; i++){
-                    if(i===3){insideDiv += "------ Affinage ------<br>";}
+                    if(i===3){insideDiv += "------ Améliorations ------<br>";}
                     else if(i===7){insideDiv += "------ Transport ------<br>";}
-                    else if(i===10){insideDiv += "------ Autre ------<br>";}
+                    else if(i===10){insideDiv += "------ Autres ------<br>";}
                     insideDiv += buildings.img(i)+" "+buildings.nameFr[i]+" x"+buildings.quantityTotal[i]+ " --- Coût :";
                     if(buildings.woodCost[i] > 0){insideDiv += " " +buildings.woodCost[i]+ " "+img("wood");}
                     if(buildings.plankCost[i] > 0){insideDiv += " + " +buildings.plankCost[i]+ " "+img("plank");}
@@ -1952,36 +2334,8 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            function ally(){
-                let nbAllies = parseInt(Math.random()*buildings.quantityTotal[buildings.name.indexOf("beacon")]);//Balancing
-                if(nbAllies <= 0){nbAllies = 1;}
-                player.workerAvaible += nbAllies;
-                player.workerTotal += nbAllies;
-                update("ressources");
-                let randomGenre = parseInt(Math.random()*2);
-                let subject;
-                if(nbAllies < 2 && randomGenre === 0){subject = "elle";}
-                else if(nbAllies < 2 && randomGenre === 1){subject = "il";}
-                else if(nbAllies >= 2 && randomGenre === 0){subject = "elles";}
-                else{subject = "ils";}
-                let insideDiv = "<p>" + subject.charAt(0).toUpperCase() + subject.slice(1) + " décen";
-                if(nbAllies >= 2){insideDiv += "dent";}else{insideDiv += "t";}
-                insideDiv += " de ";
-                if(nbAllies >= 2){insideDiv += "leur ";}else{insideDiv += "son ";}
-                insideDiv += definitionOf("zuriya mayafi") + " en agitant une étoffe blanche.<br>Après avoir raconté les péripéties qui ";
-                if(nbAllies >= 2){insideDiv += "leur";}else{insideDiv += "lui";}
-                insideDiv += " sont arrivés, "+subject+" demande";
-                if(nbAllies >= 2){insideDiv += "nt";}
-                insideDiv += " à rejoindre ton semblant de "+definitionOf("kabila")+" pour le reste du "+definitionOf("tashi")+".<br>";
-                for(i=0; i<nbAllies; i++){insideDiv += img("worker");}
-                insideDiv += "</p>";
-                document.getElementById('main_div').innerHTML = insideDiv;
-            }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
             function howManyCredits(pRess){
-                let mPrice = [4, 1, 3, 2, 1, 10, 3];//Balancing
+                let mPrice = [4, 1, 3, 2, 1, 10, 3];
                 if(pRess === "valeurBois"){return mPrice[0];}
                 else if(pRess === "valeurPlanche"){return mPrice[1];}
                 else if(pRess === "valeurRoche"){return mPrice[2];}
@@ -2030,8 +2384,140 @@
                         let mRess = buildings.name.indexOf(buildings.name[pRess].match("([a-z]*)")[0]);
                         windmill = buildings.woodCost[mRess]*mPrice[0]+buildings.plankCost[mRess]*mPrice[1]+buildings.stoneCost[mRess]*mPrice[2]+buildings.oreCost[mRess]*mPrice[3]+buildings.fiberCost[mRess]*mPrice[4]+buildings.sailCost[mRess]*mPrice[5];
                     }
-                    return windmill+buildings.woodCost[pRess]*mPrice[0]+buildings.plankCost[pRess]*mPrice[1]+buildings.stoneCost[pRess]*mPrice[2]+buildings.oreCost[pRess]*mPrice[3]+buildings.fiberCost[pRess]*mPrice[4]+buildings.sailCost[pRess]*mPrice[5];
+                    return parseInt(((windmill+buildings.woodCost[pRess]*mPrice[0]+buildings.plankCost[pRess]*mPrice[1]+buildings.stoneCost[pRess]*mPrice[2]+buildings.oreCost[pRess]*mPrice[3]+buildings.fiberCost[pRess]*mPrice[4]+buildings.sailCost[pRess]*mPrice[5])/buildings.nbBuildCreate[i])*0.75);//Balancing reduction of value 0.75
                 }
+            }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            function displayTB(){
+                let mT = "";
+                let mB = "";
+                for(i=0; i<options.length; i++){
+                    if(options[i][1]){//isTrue
+                        if(options[i][0] === "display-buildings"){
+                            for(j=0; j<buildings.name.length; j++){
+                                if(buildings.quantityTotal[j] > 0){
+                                    for(k=0; k<buildings.quantityAvailable[j]; k++){mB += buildings.img(j)+" ";}
+                                    mB += "<span class=unclicable>";
+                                    for(k=0; k<buildings.quantityTotal[j]-buildings.quantityAvailable[j]; k++){mB += buildings.img(j)+" ";}
+                                    mB += "</span>";
+                                }
+                            }
+                        }else if(options[i][0] === "display-tools"){
+                            for(j=0; j<axe.quantityAvailable[0]; j++){mT += img("axe-wood")+" ";}
+                            for(j=0; j<axe.quantityTotal[0]-axe.quantityAvailable[0]; j++)
+                                {mT += "<span class=unclicable>"+img("axe-wood")+"</span> ";}
+                            for(j=0; j<axe.quantityAvailable[1]; j++){mT += img("axe-ore")+" ";}
+                            for(j=0; j<axe.quantityTotal[1]-axe.quantityAvailable[1]; j++)
+                                {mT += "<span class=unclicable>"+img("axe-ore")+"</span> ";}
+                            for(j=0; j<pickaxe.quantityAvailable[0]; j++){mT += img("pickaxe-wood")+" ";}
+                            for(j=0; j<pickaxe.quantityTotal[0]-pickaxe.quantityAvailable[0]; j++)
+                                {mT += "<span class=unclicable>"+img("pickaxe-wood")+"</span> ";}
+                            for(j=0; j<pickaxe.quantityAvailable[1]; j++){mT += img("pickaxe-ore")+" ";}
+                            for(j=0; j<pickaxe.quantityTotal[1]-pickaxe.quantityAvailable[1]; j++)
+                                {mT += "<span class=unclicable>"+img("pickaxe-ore")+"</span> ";}
+                            for(j=0; j<basket.quantityAvailable[0]; j++){mT += img("basket")+" ";}
+                            for(j=0; j<basket.quantityTotal[0]-basket.quantityAvailable[0]; j++)
+                                {mT += "<span class=unclicable>"+img("basket")+"</span> ";}
+                        }
+                    }
+                }
+                let mTxt = "";
+                if(mB != "" || mT != ""){
+                    mTxt = "<p style=\"text-align:center; margin-top:4px; margin-bottom:0px\">"+mB;
+                    if(mB != "" && mT != ""){mTxt += "<br>";}
+                    mTxt += mT+"</p>";
+                }
+                return mTxt;
+            }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            function startingDay(){
+                //crazyTravellers
+                if(crazyTravellers[0] > 0){
+                    let illuRand;
+                    let izit;
+                    for(i=0; i<crazyTravellers[0]; i++){
+                        izit = true;
+                        while(izit){
+                            illuRand = parseInt(Math.random()*7);
+                            if(illuRand === 0 && player.wood > 0){player.wood --; izit=false;}
+                            else if(illuRand === 1 && player.plank > 0){player.plank --; izit=false;}
+                            else if(illuRand === 2 && player.stone > 0){player.stone --; izit=false;}
+                            else if(illuRand === 3 && player.ore > 0){player.ore --; izit=false;}
+                            else if(illuRand === 4 && player.fiber > 0){player.fiber --; izit=false;}
+                            else if(illuRand === 5 && player.food > 0){player.food --; izit=false;}
+                            else if(illuRand === 6 && player.food > 0){player.food --; izit=false;}
+                        }
+                    }
+                }
+                monomaniacWork();
+                //
+                ressourcesSD[0] = player.wood; ressourcesSD[1] = player.plank; ressourcesSD[2] = player.stone;
+                ressourcesSD[3] = player.ore; ressourcesSD[4] = player.fiber; ressourcesSD[5] = player.sail;
+                ressourcesSD[6] = player.food; ressourcesSD[7] = player.workerAvaible; ressourcesSD[8] = player.workerTotal;
+
+                toolsSD[0] = axe.quantityTotal[0]; toolsSD[1] = axe.quantityTotal[1];  toolsSD[2] = pickaxe.quantityTotal[0];
+                toolsSD[3] = pickaxe.quantityTotal[1]; toolsSD[4] = basket.quantityTotal[0];
+                for(i=0; i<buildings.name.length; i++){
+                    buildingsSD[i] = buildings.quantityTotal[i];
+                }
+            }
+
+            function monomaniacWork(){
+                if(crazyTravellers[2] > 0 && player.workerAvaible > 0){
+                    for(i=0; i<monomaniac.length; i++){
+                        if(monomaniac[i] === "wood"){
+                            if(axe.quantityAvailable[1] > 0)
+                                {axe.quantityAvailable[1] --; player.woodNextDay += gathering("wood", 2, "gain");}
+                            else if(axe.quantityAvailable[0] > 0)
+                                {axe.quantityAvailable[0] --; player.woodNextDay += gathering("wood", 1, "gain");}
+                            else{player.woodNextDay += gathering("wood", 0, "gain");}
+                        }else if(monomaniac[i] === "stone"){
+                            if(pickaxe.quantityAvailable[1] > 0)
+                                {pickaxe.quantityAvailable[1] --; player.stoneNextDay += gathering("stone", 2, "gain");}
+                            else if(pickaxe.quantityAvailable[0] > 0)
+                                {pickaxe.quantityAvailable[0] --; player.stoneNextDay += gathering("stone", 1, "gain");}
+                            else{player.stoneNextDay += gathering("stone", 0, "gain");}
+                        }else if(monomaniac[i] === "fiber"){
+                            if(basket.quantityAvailable[0] > 0)
+                                {basket.quantityAvailable[0] --; player.fiberNextDay += gathering("fiber", 1, "gain");}
+                            else{player.fiberNextDay += gathering("fiber", 0, "gain");}
+                        }else{
+                            if(basket.quantityAvailable[0] > 0)
+                                {basket.quantityAvailable[0] --; player.foodNextDay += gathering("food", 1, "gain");}
+                            else{player.foodNextDay += gathering("food", 0, "gain");}
+                        }
+                        player.workerAvaible --;
+                    }
+                    update("ressources");
+                }
+            }
+
+            function restartDay(){
+                player.wood = ressourcesSD[0]; player.woodNextDay = 0;
+                player.plank = ressourcesSD[1]; player.plankNextDay = 0;
+                player.stone = ressourcesSD[2]; player.stoneNextDay = 0;
+                player.ore = ressourcesSD[3]; player.oreNextDay = 0;
+                player.fiber = ressourcesSD[4]; player.fiberNextDay = 0;
+                player.sail = ressourcesSD[5]; player.sailNextDay = 0;
+                player.food = ressourcesSD[6]; player.foodNextDay = 0;
+                player.workerAvaible = ressourcesSD[7];
+                player.workerTotal = ressourcesSD[8];
+                player.wounded = player.workerTotal - player.workerAvaible;
+                axe.quantityTotal[0] = toolsSD[0]; axe.quantityAvailable[0] = axe.quantityTotal[0];
+                axe.quantityTotal[1] = toolsSD[1]; axe.quantityAvailable[1] = axe.quantityTotal[1];
+                pickaxe.quantityTotal[0] = toolsSD[2]; pickaxe.quantityAvailable[0] = pickaxe.quantityTotal[0];
+                pickaxe.quantityTotal[1] = toolsSD[3]; pickaxe.quantityAvailable[1] = pickaxe.quantityTotal[1];
+                basket.quantityTotal[0] = toolsSD[4]; basket.quantityAvailable[0] = basket.quantityTotal[0];
+                for(i=0; i<buildings.name.length; i++){
+                    buildings.quantityTotal[i] = buildingsSD[i];
+                    buildings.quantityAvailable[i] = buildings.quantityTotal[i];
+                }
+                monomaniacWork();
+                update("ressources");
             }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2104,6 +2590,7 @@
 <!--//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
 
     </head>
+    <div id=options_div><!----></div>
     <nav id=nav_div>
         ᨏᨊᨓ <span style="font-size: 2em">Tashi</span> ᨓᨊᨏ
     </nav>
@@ -2116,7 +2603,7 @@
     </div>
 
     <div id="main_div" style="flex: 2;">
-        <p class="dialogue_p">C’est toi qui avais décidé d’installer la <span class=definition_txt title="tribu">kabila</span> à l’écart des <span class=definition_txt title="ancêtres">magabatan</span>, plus loin dans les steppes, dans un espace qui te semblait pourtant protégé du vent. Un lieu où les ressources paraissaient moins rares, où la nature était plus sauvage, les éléments plus fougueux, un lieu où le vent soufflait de façon plus pur sur le visage.<br>C’est toi qui avais décidé que la <span class=definition_txt title="tribu">kabila</span> resterait sur place lors de la <span class=definition_txt title="première vague">farko kalama</span>, espérant quoi ? Avoir plus de temps pour se préparer au <span class=definition_txt title="départ, voyage, exode dans ce cas">tashi</span> ? Espérais-tu tenir face à la <span class=definition_txt title="déferlante, ouragan">guguwa</span> ? Avec si peu ?<br>La <span class=definition_txt title="première vague">farko kalama</span> s’est abattue sur les quelques brises-vent que vous aviez érigés, balayant tout, emportant dans son sillage le visage masqué de nombre des tiens.<br>Elle est passée. Maintenant plus le choix, tu dois entreprendre le <span class=definition_txt title="départ, voyage, exode dans ce cas">tashi</span> pour te rendre à la forteresse des montagnes la plus proche avant l’arrivée de la <span class=definition_txt title="déferlante, ouragan">guguwa</span>.<br>Avec encore moins que… prévu ?</p>
+        <p class="dialogue_p">C’est toi qui avais décidé d’installer la <span class=definition_txt title="tribu">kabila</span> à l’écart des <span class=definition_txt title="ancêtres">magabatan</span>, plus loin dans les steppes, dans un espace qui te semblait pourtant protégé du vent. Un lieu où les ressources paraissaient moins rares, où la nature était plus sauvage, les éléments plus fougueux, un lieu où le vent soufflait de façon plus pure sur le visage.<br>C’est toi qui avais décidé que la <span class=definition_txt title="tribu">kabila</span> resterait sur place lors de la <span class=definition_txt title="première vague">farko kalama</span>, espérant quoi ? Avoir plus de temps pour se préparer au <span class=definition_txt title="départ, voyage, exode dans ce cas">tashi</span> ? Espérais-tu tenir face à la <span class=definition_txt title="déferlante, ouragan">guguwa</span> ? Avec si peu ?<br>La <span class=definition_txt title="première vague">farko kalama</span> s’est abattue sur les quelques brises-vent que vous aviez érigés, balayant tout, emportant dans son sillage le visage masqué de nombre des tiens.<br>Elle est passée. Maintenant plus le choix, tu dois entreprendre le <span class=definition_txt title="départ, voyage, exode dans ce cas">tashi</span> pour te rendre à la forteresse des montagnes la plus proche avant l’arrivée de la <span class=definition_txt title="déferlante, ouragan">guguwa</span>.<br>Avec encore moins que… prévu ?</p>
         <p style="text-align: center;"><button onclick='start();'>Commencer !</button></p>
     </div>
 

@@ -59,6 +59,14 @@ h2{
     margin-bottom: 12px;
     text-align: center;
 }
+input{
+    background-color: var(--sombre);
+    color: white;
+    font-family: "FontFamilyChoosed", serif;
+    font-size: 1.4em;
+    padding-left: 8px;
+    width: 64px;
+}
 img{
     cursor: help;
     image-rendering: crisp-edges;
@@ -82,6 +90,16 @@ summary:hover{
     border-collapse: collapse;
     margin: 0 auto;
 }*/
+#buildings_tab{
+    width: 100%;
+}
+#buildings_tab td{
+    background-color: var(--hightlight);
+    cursor: pointer;
+    font-size: 1.2em;
+    text-align: center;
+    width: 25%;
+}
 #dashboard_div{
     background-color: var(--sombre);
 }
@@ -96,6 +114,7 @@ summary:hover{
     background-color: var(--sombre);
     padding-left: var(--main-div-padding);
     padding-right: var(--main-div-padding);
+    position: relative; /*for tip_trigger*/
 }
 #merchandise{
     display: inline-block;
@@ -104,6 +123,10 @@ summary:hover{
 #merchandise th{
     background-color: var(--hightlight);
     padding: 4px;
+}
+#options_div{
+    position: fixed;
+    right: 0;
 }
 #ressources_div{
     background-color: var(--sombre);
@@ -197,11 +220,6 @@ table.clipboard{
 .ressources_next_day{
     color: grey;
 }
-.risk_percentage{
-    background-color: var(--opposite);
-    cursor: help;
-    text-decoration: underline dotted;
-}
 .sake_both{
     color: var(--opposite);
 }
@@ -242,6 +260,12 @@ table.clipboard{
     margin-right: var(--h1-unmargin);
     padding: 6px;
     text-align: justify;
+}
+.tip_trigger{
+    cursor: pointer;
+    position: absolute;
+    right: 0px;
+    top: 0px;
 }
 .unclicable{
     filter: brightness(0.33) grayscale(1);
