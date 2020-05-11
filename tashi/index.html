@@ -19,7 +19,7 @@
             var buildingsPage = 0;
             var ethical = 100;
             var ethicalName = ["wounded", "dead", "no-guy", "sacrifice", "wood-none", "wood-few", "wood-some", "wood-lot", "food-none", "food-gain", "pirates-deal", "pirates-win", "thief", "not-ally"];
-            var ethicalPoints = [10, 30, 10, 50, 25, 0, 15, 25, 0, 10, 20, 30, 15, 20];
+            var ethicalPoints = [10, 30, 10, 50, 25, 0, 15, 25, 0, 10, 20, 20, 15, 20];
             var crazyTravellers = [0, 0, 0]; //illuminate, thief, monomaniac
             var totalCrazyTravellers = [0, 0, 0];
             var monomaniac = [];
@@ -292,9 +292,13 @@
                     this.fiberCost =    [0, 0, 0, 0, 0, 0, 0, 8,12, 6, 4, 2, 0, 0, 4];
                     this.sailCost =     [0, 0, 0, 0, 2, 2, 2, 4, 6, 3, 0, 0, 0, 2, 0];
                     this.nbBuildCreate= [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2];
+                    this.addingWeight = [];
                     this.weight = [];
                     for(i=0; i<this.name.length; i++){
-                        this.weight[i] = parseInt(((this.woodCost[i]*8 +  this.plankCost[i]*2 + this.stoneCost[i]*6 + this.oreCost[i]*2 + this.fiberCost[i]*0 + this.sailCost[i]*3)/this.nbBuildCreate[i])*0.75);//Balancing the reducing weight of 0.75
+                        this.addingWeight[i] = ((this.woodCost[i]*8 +  this.plankCost[i]*2 + this.stoneCost[i]*6 + this.oreCost[i]*2 + this.fiberCost[i]*0 + this.sailCost[i]*3)/this.nbBuildCreate[i]);
+                    }
+                    for(i=0; i<this.name.length; i++){
+                        this.weight[i] = parseInt(this.addingWeight[i]*0.75);//Balancing the reducing weight of 0.75
                     }
                 },
                 img(value){
@@ -492,7 +496,7 @@
                         else{insideDiv += "update(\"map\");";}
                         insideDiv += "player.humanSacrifice ++; ethical -= "+ethicalPoints[ethicalName.indexOf("sacrifice")]+"; update(\"ressources\"); updateStat("+player.localisation+");'";
                         if((player.daysBeforeStorm != 0 && player.food >= player.workerTotal*2) || (player.food >= player.workerTotal*2) ||
-                            (player.food+board.foodAvaible[player.localisation]+zepplin >= player.workerAvaible*3)){insideDiv += " title=\"Tu peux continuer à faire survivre ton groupe sans ça. Il ne te laisseront donc pas faire de sacrifice inutile\" class=unclicable DISABLED";}
+                            (player.food+board.foodAvaible[player.localisation]+zepplin >= player.workerAvaible*3) || player.workerTotal === 1){insideDiv += " title=\"Tu peux continuer à faire survivre ton groupe sans ça. Il ne te laisseront donc pas faire de sacrifice inutile\" class=unclicable DISABLED";}
                         insideDiv += ">- "+img("worker")+"</button></p>";
                     }
                     document.getElementById('main_div').innerHTML = tipTrigger(witchMenu)+insideDiv;
@@ -699,8 +703,8 @@
                         insideDiv += "<p>"+buildings.img(i)+" <span style=\"font-size:2em\">"+buildings.nameFr[i]+"</span> <span style=\"cursor:help\" title='Disponible/Total'> "+buildings.quantityAvailable[i]+"/" +buildings.quantityTotal[i]+ "</span><br>"+buildings.description[i];
                         if(buildings.nbBuildCreate[i] > 1){insideDiv += "<br>Nombre de pièces réalisées par action : "+buildings.nbBuildCreate[i];}
                         if(buildings.durabilityMax[i] > 0){insideDiv += "<br>Nombre d'utilisations par jour : "+buildings.durabilityMax[i];}
-                        if(buildings.name[i] === "wagon" || buildings.name[i] === "wagon-large"){insideDiv += "<br>Poids : 0 " + img("weight");
-                        }else{insideDiv += "<br>Poids : " + buildings.weight[i]*buildings.nbBuildCreate[i] + " " + img("weight");}
+                        if(buildings.name[i] === "wagon" || buildings.name[i] === "wagon-large"){insideDiv += "<br>Poids : -"+buildings.addingWeight[i]+" " + img("weight");
+                        }else{insideDiv += "<br>Poids : " + parseInt(buildings.weight[i]*buildings.nbBuildCreate[i]-buildings.addingWeight[i]) + " " + img("weight");}
                         insideDiv += "<br>Coût : ";
                         insideDiv += buildings.price(i);
                         insideDiv += "<br>"+buildings.buildButton(i, "keepbook")+" <button onclick='player.bookmarked="+i+"; update(\"building\"); updateStat("+player.localisation+");' ";
@@ -826,7 +830,7 @@
                         let ress = "";
                         let nb;
                         let flipCoin = parseInt(Math.random()*2)//rope or not
-                        let rng = parseInt(Math.random()*8);//nb ressources
+                        let rng = parseInt(Math.random()*8);//numero ressources
                         if(flipCoin === 0){
                             if(rng === 0){//wood
                                 h1 += "bois";
@@ -946,7 +950,7 @@
                                 h1 += "voile"; ressPlayer = "sail";
                                 randomQnty = parseInt(Math.random()*2)+3-1;
                                 randomQnty = Math.min(player.sail, randomQnty);
-                            }else if(rng === 6){
+                            }else{
                                 h1 += "nourriture"; ressPlayer = "food";
                                 randomQnty = parseInt(Math.random()*2)+4/2;
                                 randomQnty = Math.min(player.food, randomQnty);
@@ -957,17 +961,19 @@
                                 back += "Ta fortification atténuant légèrement cette perte.<br>";
                                 randomQnty --;
                             }
-                            if(buildings.quantityTotal[buildings.name.indexOf("rope")] > 0 && randomQnty > 0){
+                            let ropeQnty = parseInt(Math.random()*3+1);
+                            if(buildings.quantityTotal[buildings.name.indexOf("rope")] >= ropeQnty && randomQnty > 0){
                                 back += "Heureusement il y avait le "+buildings.nameFr[buildings.name.indexOf("rope")]+" pour tout retenir, même si il s’en est retrouvé abîmé.";
                                 addDisabled[0] = ""; addDisabled[1] = "class=unclicable DISABLED";
                             }else if(randomQnty === 0){
                                 back += "Heureusement le vent n'a pas été assez fort pour vous faire perdre quoi que ce soit.";
                                 addDisabled[0] = "class=unclicable DISABLED"; addDisabled[1] = "";
                             }else{
-                                back += "Malheureusement, une partie du stock s’est envolé avec le vent.";
+                                back += "Malheureusement, une partie du stock s’est envolé avec le vent, ";
+                                if(buildings.quantityTotal[buildings.name.indexOf("rope")] > 0){back += "le stock n’étant pas assez arrimé."}
+                                else{back += "faute de bout d’amarrage."}
                                 addDisabled[0] = "class=unclicable DISABLED"; addDisabled[1] = "";
                             }
-                            let ropeQnty = parseInt(Math.random()*3+1)
                             button = "<button onclick='player.needToChoose=false; buildings.quantityAvailable[buildings.name.indexOf(\"rope\")] -= "+ropeQnty+"; buildings.quantityTotal[buildings.name.indexOf(\"rope\")] -= "+ropeQnty+"; update(\"map\"); update(\"ressources\"); startingDay();' "+addDisabled[0]+">-"+ropeQnty+" "+buildings.img("rope")+"</button> <button onclick='player.needToChoose=false; player."+ressPlayer+" -= "+randomQnty+"; if(player."+ressPlayer+" < 0){player."+ressPlayer+" = 0;}; update(\"ressources\"); update(\"map\"); startingDay();' "+addDisabled[1]+">";
 
                             if(randomQnty > 0){
@@ -1229,7 +1235,7 @@
                                 else{button += "il se moque de toi et t’humilie.";}
                                 if(nbPirates < player.workerTotal){button += " La position des tiens montre qu’ils ne soutiennent pas ta décision.";}
                                 else{button += " La position des tiens montre qu’ils soutiennent ta décision.";}
-                                button += "\"); startingDay();'>Accepter</button> <button onclick='player.needToChoose = false; update(\"dashboard\"); fight("+nbPirates+");'>Attaquer</button>";
+                                button += "\"); startingDay();'>Accepter</button> <button onclick='player.needToChoose = false; update(\"dashboard\"); fight("+nbPirates+", "+difficultyLevel+");'>Attaquer</button>";
                             }
                         }
 /////////////////////
@@ -1510,6 +1516,7 @@
             function conseqQnty(mRess, mQnty, dmgCo){
                 player.needToChoose=false; update("dashboard"); update("ressources");
                 let mTxt = '';
+                mQnty = parseInt(mQnty);
                 if(mQnty === '' || mQnty < 0){mQnty = 0;}
                 if(mRess === "wood"){
                     if(mQnty === 0){
@@ -1550,7 +1557,7 @@
                     if(mQnty === 0){
                         mTxt = "Pour éviter que les tiens ne se brûlent en manipulant le feu avec ces insectes, tu vas en leur sens et acceptes leurs arguments. Il faudra cependant être plus efficace lors des récoltes de baies et de racines comestibles lors des prochaines journées pour subvenir à vos besoins alimentaires.";
                     }else{
-                        zepplin += parseInt(mQnty);
+                        zepplin += mQnty;
                         player.workerAvaible -= dmgCo; player.wounded += dmgCo;
                         ethical -= dmgCo*ethicalPoints[ethicalName.indexOf("wounded")];
                         mTxt = "Après avoir insisté un peu plus et avoir clairement démontré la nécessité de ces pièges célestes, le groupe se joint à toi pour la chasse aux idoflames.<br>Malgré de nombreuses mésaventures, vous arrivez ensemble à en attraper et à extraire le précieux gaz. Les rares doigts non brûlés réussissent, avant le début de cette nouvelle journée, à coudre ";
@@ -1569,7 +1576,7 @@
                         mTxt = "Il y a trop de risque et trop de perte de ressources, vous ne pouvez pas vous le permettre selon toi. En plus, rien ne dit que la "+definitionOf("tehanegh")+" entende vos prières et verra vos offrandes. Mieux vaut rester solide sur vos acquis à ton avis.";
                         ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
                     }else{
-                        statue += parseInt(mQnty);
+                        statue += mQnty;
                         player.workerAvaible -= dmgCo; player.wounded += dmgCo;
                         ethical -= dmgCo*ethicalPoints[ethicalName.indexOf("wounded")];
                         mTxt = "Tu penses également qu’il serait bon de demander l’aide de la "+definitionOf("tehanegh")+" c’est pourquoi tu décides de mener le chantier de construction de la statue. Après quelques heures nocturnes à trimer et de nombreuses blessures et éraflures";
@@ -1587,9 +1594,9 @@
                         ethical -= ethicalPoints[ethicalName.indexOf("no-guy")];
                     }else{
                         let valRess = [mQnty+parseInt(Math.random()*5), mQnty+parseInt(Math.random()*3), mQnty+parseInt(Math.random()*5)];//Balancing
-                        board.stoneAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*5));
-                        board.fiberAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*5));
-                        board.foodAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*5));//Balacing
+                        board.stoneAvaible[player.localisation] += (2*mQnty+parseInt(Math.random()*3));
+                        board.fiberAvaible[player.localisation] += (3*mQnty+parseInt(Math.random()*3));
+                        board.foodAvaible[player.localisation] += (mQnty+parseInt(Math.random()*3));//Balacing
                         updateStat(player.localisation);
                         player.workerAvaible -= dmgCo; player.wounded += dmgCo;
                         ethical -= dmgCo*ethicalPoints[ethicalName.indexOf("wounded")];
@@ -1601,6 +1608,7 @@
                         }
                         mTxt += "<br>De cette première expédition, vous arrivez à sortir : ";
                         mTxt += valRess[0]+" "+img("stone")+" +"+valRess[1]+" "+img("ore")+" +"+valRess[2]+" "+img("food");
+                        player.stone += valRess[0]; player.ore += valRess[1]; player.food += valRess[2];
                         mTxt += "<br>Le reste, il faudra le <span class=important_txt>Récolter</span> petit à petit, de plus en plus profondément, lors des jours suivants.";
                     }
                 }
@@ -2164,7 +2172,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            function fight(nbPirates){
+            function fight(nbPirates, difficultyLevel){
                 let crossbow = buildings.quantityTotal[buildings.name.indexOf("crossbow")];
                 let nbPiratesStart = nbPirates;
                 let insideDiv = "<p>";
