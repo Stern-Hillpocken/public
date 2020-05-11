@@ -1726,7 +1726,7 @@
                     insideDiv += "<tr><td class=warning><span title=\"Nourriture pour les deux jours de trajet ("+2*player.workerTotal+")\" style=\"cursor:help;\">-" +2*player.workerTotal+"</span></td><td>"+img("food")+"</td></tr></table>";
 
                     insideDiv += "<button onclick='player.changeLocalisation(" +nbSpot+ "); board.upClass("+nbSpot+"); player.vision.push("+nbSpot+"); updateStat("+nbSpot+"); nextDay();' ";
-                    if(player.workerAvaible+player.wounded < player.workerTotal){insideDiv += "class=unclicable title='Nous avons besoin de tout le monde pour pouvoir partir' DISABLED";}
+                    if(player.workerAvaible+player.wounded+crazyTravellers[2] < player.workerTotal){insideDiv += "class=unclicable title='Nous avons besoin de tout le monde pour pouvoir partir' DISABLED";}
                     else if(player.food < 2*player.workerTotal){insideDiv += "class=unclicable title='Pas assez de nourriture' style=\"cursor:help;\" DISABLED";}
                     else if(player.weight > player.weightMax){insideDiv += "class=unclicable title='Tu transportes trop de choses, supprime des ressources dans le Stock ou construit des structures de transport' style=\"cursor:help;\" DISABLED";}
                     insideDiv += ">Se déplacer</button>";
@@ -2273,6 +2273,7 @@
                     insideDiv += "</p>";
                     player.wood += rewardPirate[0]; player.plank += rewardPirate[1]; player.stone += rewardPirate[2]; player.ore += rewardPirate[3]; player.fiber += rewardPirate[4]; player.sail += rewardPirate[5]; player.food += rewardPirate[6];
                     update("ressources");
+                    startingDay();
                 }else{
                     player.needToChoose = true; update("dashboard"); player.workerTotal = 0; update("ressources"); insideDiv += "<p style=\"text-align:center;\"><button onclick='update(\"end\");'>Mort</button></p>";
                 }
